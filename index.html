@@ -46,10 +46,24 @@ button{border:none;border-radius:12px;padding:13px 18px;font-size:1rem;font-weig
 .opt.correct{border-color:var(--good);background:rgba(47,111,79,.12);}
 .opt.wrong{border-color:var(--bad);background:rgba(192,57,38,.12);}
 .opt:disabled{opacity:.85;}
+.opt.selected{border-color:var(--accent);background:rgba(47,111,79,.18);}
 .rationale{margin-top:14px;padding:12px 14px;background:var(--bg);border-radius:12px;border:1px solid var(--border);font-size:.9rem;line-height:1.5;color:var(--sub);display:none;}
 .progress{font-size:.82rem;color:var(--sub);margin-bottom:8px;}
 .hidden{display:none;}
 .score{font-size:2.2rem;font-weight:700;color:var(--accent);margin:6px 0;}
+.quizbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.timer{font-size:.85rem;font-weight:600;color:var(--accent2);font-variant-numeric:tabular-nums;}
+.timer.warn{color:var(--bad);}
+.topic-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:.9rem;}
+.topic-row:last-child{border-bottom:none;}
+.topic-bar{height:6px;border-radius:3px;background:var(--border);margin-top:4px;overflow:hidden;}
+.topic-bar > div{height:100%;background:var(--accent);border-radius:3px;}
+.review-item{padding:12px 0;border-bottom:1px solid var(--border);font-size:.9rem;line-height:1.5;}
+.review-item:last-child{border-bottom:none;}
+.review-item .q{font-weight:600;margin-bottom:6px;}
+.review-item .ans{color:var(--good);}
+.review-item .yours{color:var(--bad);}
+.review-item .rat{color:var(--sub);font-size:.85rem;margin-top:6px;}
 </style>
 </head>
 <body>
@@ -66,11 +80,27 @@ button{border:none;border-radius:12px;padding:13px 18px;font-size:1rem;font-weig
       <span class="sub" id="maxAvail"></span>
     </div>
   </div>
+  <div class="card">
+    <label style="font-weight:600;">Mode</label>
+    <div class="count-row">
+      <label><input type="radio" name="mode" value="practice" checked> Practice (no timer)</label>
+    </div>
+    <div class="count-row">
+      <label><input type="radio" name="mode" value="timed"> Timed Exam (1 min per item)</label>
+    </div>
+  </div>
+  <div class="card hidden" id="historyCard">
+    <div class="sub" style="margin-bottom:8px;">Recent attempts</div>
+    <div id="historyList"></div>
+  </div>
   <button class="btn-primary" id="startBtn">Start Exam</button>
 </div>
 
 <div id="quiz" class="hidden">
-  <div class="progress" id="progress"></div>
+  <div class="quizbar">
+    <div class="progress" id="progress"></div>
+    <div class="timer hidden" id="timer">⏱ 00:00</div>
+  </div>
   <div class="card">
     <span class="tag" id="qTopic"></span>
     <div class="qtext" id="qText"></div>
@@ -86,6 +116,15 @@ button{border:none;border-radius:12px;padding:13px 18px;font-size:1rem;font-weig
     <div class="score" id="scoreText"></div>
     <div class="sub" id="scoreDetail"></div>
   </div>
+  <div class="card" id="weakTopicsCard">
+    <div class="sub" style="margin-bottom:8px;">Performance by topic</div>
+    <div id="topicBreakdown"></div>
+  </div>
+  <div class="card hidden" id="reviewCard">
+    <div class="sub" style="margin-bottom:8px;">Review missed questions</div>
+    <div id="reviewList"></div>
+  </div>
+  <button class="btn-secondary" id="reviewBtn">Review Missed Questions</button>
   <button class="btn-primary" id="restartBtn">New Exam</button>
 </div>
 
@@ -143,6 +182,108 @@ r:"The fundus descends about 1 fingerbreadth (1 cm) per day after delivery, so b
 {topic:"Obstetrics", q:"Which symptom reported by a pregnant client in the third trimester is a danger sign requiring immediate follow-up?",
 opts:["Mild ankle edema at end of day","Occasional Braxton Hicks contractions","Severe headache with blurred vision","Increased urinary frequency"],correct:2,
 r:"Severe headache with visual disturbances can indicate worsening preeclampsia progressing toward eclampsia, and requires immediate evaluation of blood pressure and neurologic status."},
+{topic:"Obstetrics", q:"A client at 28 weeks AOG comes for a prenatal check. The nurse notes a fundal height of 24 cm. What is the most appropriate nursing action?",
+opts:["Document as normal for AOG","Notify the physician; this may indicate fetal growth restriction or inaccurate dating","Reassure the client that fundal height is unrelated to AOG","Schedule the next visit in 6 weeks"],correct:1,
+r:"Between 18–32 weeks, fundal height in cm roughly equals AOG in weeks (±2 cm). A 4 cm discrepancy warrants further evaluation for intrauterine growth restriction, oligohydramnios, or dating error."},
+{topic:"Obstetrics", q:"Which of the following are TRUE statements about the first stage of labor? Select all that apply.",
+opts:["It begins with the onset of regular contractions and ends with full cervical dilation","It is divided into latent and active phases","The latent phase is typically the fastest phase of the first stage","It ends with delivery of the baby"],correct:[0,1],
+r:"The first stage spans onset of true labor to full dilation (10 cm), divided into latent (0–6 cm) and active (6–10 cm) phases. The latent phase is usually the LONGEST, and delivery of the baby occurs in the second stage."},
+{topic:"Obstetrics", q:"A nurse is monitoring a client in labor. Which findings indicate true labor? Select all that apply.",
+opts:["Contractions become stronger with ambulation","Contractions are regular and progressively closer together","Cervical dilation and effacement progress with contractions","Contractions are relieved by position changes","Discomfort is usually felt in the abdomen only"],correct:[0,1,2],
+r:"True labor is characterized by regular, intensifying contractions that worsen with activity, and progressive cervical change. False labor eases with position change, and true labor pain is typically felt in the back radiating to the abdomen."},
+{topic:"Obstetrics", q:"A client at 36 weeks has a biophysical profile (BPP). Which parameters are assessed in this test? Select all that apply.",
+opts:["Fetal breathing movements","Fetal tone","Amniotic fluid volume","Maternal blood pressure","Nonstress test (fetal heart rate reactivity)"],correct:[0,1,2,4],
+r:"The BPP assesses five components: fetal breathing, fetal movement, fetal tone, amniotic fluid volume, and a nonstress test (FHR reactivity). Maternal blood pressure is not part of the BPP."},
+{topic:"Obstetrics", q:"During the immediate postpartum period, which interventions should the nurse perform within the first hour after delivery? Select all that apply.",
+opts:["Assess the fundus and lochia every 15 minutes","Apply ice to the perineum if there is an episiotomy","Encourage the mother to void within the first hour","Initiate breastfeeding within the first hour if possible","Withhold all maternal oral intake for 24 hours"],correct:[0,1,3],
+r:"The first postpartum hour requires frequent fundal/lochia assessment, perineal comfort measures, and early breastfeeding initiation. Voiding is encouraged but typically within 6–8 hours, not strictly the first hour. Oral intake is not withheld unnecessarily."},
+{topic:"Obstetrics", q:"Which signs may indicate that a postpartum client is experiencing hypovolemic shock? Select all that apply.",
+opts:["Tachycardia","Bradycardia","Decreased blood pressure","Warm, flushed skin","Restlessness and anxiety"],correct:[0,2,4],
+r:"Hypovolemic shock presents with tachycardia, hypotension, cool/clammy skin, and restlessness. Bradycardia and warm flushed skin are not typical findings of shock."},
+{topic:"Obstetrics", q:"A nurse is teaching a pregnant client about warning signs that require immediate reporting. Which should be included? Select all that apply.",
+opts:["Vaginal bleeding","Severe abdominal pain","Persistent headache with visual changes","Mild ankle swelling at the end of the day","Decreased fetal movement"],correct:[0,1,2,4],
+r:"Bleeding, severe abdominal pain, headache with visual changes, and decreased fetal movement are danger signs. Mild dependent ankle edema is a common, expected third-trimester finding."},
+{topic:"Obstetrics", q:"A nurse is caring for a client with mild preeclampsia at 36 weeks. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Monitor blood pressure every 4 hours","Encourage a high-sodium diet","Assess deep tendon reflexes and for clonus","Restrict fluid intake to 1 L/day","Monitor for headache, visual changes, and epigastric pain"],correct:[0,2,4],
+r:"For mild preeclampsia, the nurse monitors BP, neurologic status (DTRs, clonus), and symptoms of worsening disease. A high-sodium diet and fluid restriction are NOT indicated (sodium is not restricted, but fluids are encouraged)."},
+{topic:"Obstetrics", q:"A client with severe preeclampsia is receiving magnesium sulfate IV. Which findings indicate magnesium toxicity? Select all that apply.",
+opts:["Loss of deep tendon reflexes","Respiratory rate of 10 breaths/min","Urine output of 20 mL/hour","Serum magnesium level of 4 mg/dL","Decreased level of consciousness"],correct:[0,1,4],
+r:"Magnesium toxicity signs include loss of DTRs, respiratory depression (<12/min), oliguria (<30 mL/hr), and CNS depression. A therapeutic serum magnesium level is 4–7 mg/dL; 4 mg/dL is within range."},
+{topic:"Obstetrics", q:"A client receiving magnesium sulfate develops respiratory depression and loss of deep tendon reflexes. What is the priority nursing action?",
+opts:["Increase the magnesium infusion rate","Discontinue the magnesium infusion and prepare to administer calcium gluconate","Administer a bolus of IV fluids","Place the client in Trendelenburg position"],correct:1,
+r:"Magnesium sulfate toxicity is a medical emergency. The infusion must be stopped immediately, and calcium gluconate (the antidote) should be administered as ordered while supporting respiratory function."},
+{topic:"Obstetrics", q:"A client at 34 weeks with placenta previa is admitted. Which nursing actions are appropriate? Select all that apply.",
+opts:["Perform a sterile vaginal exam to assess dilation","Monitor fetal heart tones and maternal vital signs","Prepare for possible cesarean delivery","Assess the amount and character of vaginal bleeding","Encourage ambulation to promote comfort"],correct:[1,2,3],
+r:"With placenta previa, digital/vaginal exams are CONTRAINDICATED due to risk of hemorrhage. The nurse monitors FHTs/vitals, bleeding, and prepares for possible cesarean. Ambulation may be restricted depending on bleeding."},
+{topic:"Obstetrics", q:"A client is admitted with abruptio placentae. Which assessment findings are expected? Select all that apply.",
+opts:["Painful vaginal bleeding","Board-like, tender abdomen","Painless bright red bleeding","Uterine tenderness on palpation","Fetal distress on monitoring"],correct:[0,1,3,4],
+r:"Abruptio placentae presents with painful bleeding, a rigid/tender (board-like) uterus, and possible fetal distress. Painless bleeding is characteristic of placenta previa, not abruption."},
+{topic:"Obstetrics", q:"Which are risk factors for ectopic pregnancy? Select all that apply.",
+opts:["Previous pelvic inflammatory disease","History of tubal ligation or tubal surgery","Intrauterine device (IUD) in place","History of cesarean delivery","Multiple sexual partners"],correct:[0,1,2],
+r:"Ectopic pregnancy risk factors include PID, prior tubal surgery/ligation, IUD use, and history of ectopic pregnancy. Cesarean delivery and multiple partners are not established risk factors."},
+{topic:"Obstetrics", q:"A client with a suspected ectopic pregnancy reports sudden severe lower abdominal pain and shoulder pain. The nurse suspects:",
+opts:["Normal pregnancy discomfort","Ruptured ectopic pregnancy with hemoperitoneum","Round ligament pain","Urinary tract infection"],correct:1,
+r:"Sudden severe abdominal pain with referred shoulder pain (from diaphragmatic irritation by blood) suggests a ruptured ectopic pregnancy with intra-abdominal bleeding — a surgical emergency."},
+{topic:"Obstetrics", q:"A nurse is assessing a client in the fourth stage of labor. Which finding requires immediate intervention?",
+opts:["Fundus firm at the umbilicus","Lochia rubra moderate","Perineal pad saturated within 15 minutes","Blood pressure 110/70 mmHg"],correct:2,
+r:"Saturating a perineal pad within 15 minutes indicates excessive bleeding (postpartum hemorrhage) and requires immediate assessment of the fundus, uterine tone, and possible retained placental fragments."},
+{topic:"Obstetrics", q:"Which are causes of postpartum hemorrhage (the 4 T's)? Select all that apply.",
+opts:["Tone (uterine atony)","Trauma (lacerations)","Tissue (retained placenta)","Thrombin (coagulopathy)","Temperature (fever)"],correct:[0,1,2,3],
+r:"The 4 T's of postpartum hemorrhage are Tone (atony — most common), Trauma, Tissue (retained products), and Thrombin (coagulation defects). Fever is not part of this mnemonic."},
+{topic:"Obstetrics", q:"A postpartum client's fundus is boggy and deviated to the right. What is the priority nursing action?",
+opts:["Massage the fundus immediately","Have the client empty her bladder, then reassess the fundus","Notify the physician for possible hysterectomy","Place the client in Trendelenburg position"],correct:1,
+r:"A boggy, right-deviated fundus usually indicates a full bladder displacing the uterus. The client should void (or be catheterized), then the fundus should be reassessed and massaged if still boggy."},
+{topic:"Obstetrics", q:"Which interventions help prevent postpartum hemorrhage? Select all that apply.",
+opts:["Administering uterotonics as ordered after delivery","Fundal massage after delivery of the placenta","Encouraging immediate breastfeeding","Assessing the fundus and lochia regularly","Restricting oral fluids postpartum"],correct:[0,1,2,3],
+r:"Prevention includes uterotonics, fundal massage, early breastfeeding (stimulates oxytocin release), and frequent assessment. Fluid restriction does not prevent hemorrhage and is not indicated."},
+{topic:"Obstetrics", q:"A client is scheduled for an amniocentesis at 16 weeks. Which nursing instruction is correct?",
+opts:["Empty the bladder immediately before the procedure","Maintain a full bladder during the procedure","Avoid eating for 12 hours before the procedure","Expect results within 1 hour"],correct:0,
+r:"The bladder should be emptied before amniocentesis to reduce the risk of bladder puncture and improve comfort. A full bladder is required for other procedures (e.g., early ultrasound), not amniocentesis."},
+{topic:"Obstetrics", q:"Which findings on a nonstress test (NST) would be considered reactive? Select all that apply.",
+opts:["Two accelerations of FHR ≥15 bpm lasting ≥15 seconds in 20 minutes","Fetal heart rate baseline of 140 bpm","No accelerations within 40 minutes","Late decelerations with contractions","Moderate variability"],correct:[0,1,4],
+r:"A reactive NST shows at least two FHR accelerations (≥15 bpm for ≥15 sec) in a 20-minute window, with a normal baseline (110–160) and moderate variability. Absence of accelerations is nonreactive; late decelerations are not part of NST interpretation."},
+{topic:"Obstetrics", q:"A client at 38 weeks reports a sudden gush of clear fluid from the vagina. What is the priority nursing action?",
+opts:["Perform a sterile vaginal exam to check dilation","Assess the fetal heart rate and the color/character of the fluid","Tell the client to go home and return if contractions begin","Administer a tocolytic agent"],correct:1,
+r:"After spontaneous rupture of membranes (SROM), the priority is assessing fetal well-being (FHR) and the fluid (clear vs. meconium-stained), and monitoring for cord prolapse. Sterile vaginal exams are limited to reduce infection risk."},
+{topic:"Obstetrics", q:"A client with premature rupture of membranes (PROM) at 34 weeks is admitted. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Monitor maternal temperature every 4 hours","Assess for uterine tenderness and foul-smelling discharge","Limit vaginal exams","Encourage frequent ambulation in the hallway","Monitor fetal heart rate"],correct:[0,1,2,4],
+r:"With PROM, the nurse monitors for infection (temperature, uterine tenderness, foul discharge), limits vaginal exams to reduce infection risk, and monitors FHR. Bed rest is often recommended, not hallway ambulation."},
+{topic:"Obstetrics", q:"Which conditions require a cesarean delivery? Select all that apply.",
+opts:["Complete placenta previa","Active genital herpes lesions at onset of labor","Cord prolapse","Cephalic presentation at term","Fetal distress unresponsive to intrauterine resuscitation"],correct:[0,1,2,4],
+r:"Cesarean is indicated for complete placenta previa, active herpes, cord prolapse, and unresponsive fetal distress. A normal cephalic presentation at term is not an indication for cesarean."},
+{topic:"Obstetrics", q:"A client is recovering from a cesarean delivery. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Assess the incision for redness, drainage, and approximation","Encourage early ambulation to prevent thromboembolism","Splint the incision when coughing or deep breathing","Avoid assessing the fundus to prevent discomfort","Administer pain medication as ordered"],correct:[0,1,2,4],
+r:"Post-cesarean care includes incision assessment, early ambulation, splinting for coughing, and analgesia. Fundal assessment is still performed — it is essential to monitor for hemorrhage."},
+{topic:"Obstetrics", q:"A client at 10 weeks AOG reports nausea and vomiting. Which nursing suggestions are appropriate? Select all that apply.",
+opts:["Eat small, frequent meals","Avoid greasy or spicy foods","Drink fluids between meals rather than with meals","Lie down immediately after eating","Try dry crackers before getting out of bed"],correct:[0,1,2,4],
+r:"For morning sickness, small frequent meals, avoiding trigger foods, fluids between meals, and dry crackers before rising are helpful. Lying down immediately after eating can worsen nausea and reflux."},
+{topic:"Obstetrics", q:"A nurse is assessing a client for hyperemesis gravidarum. Which findings support this diagnosis? Select all that apply.",
+opts:["Weight loss of more than 5% of pre-pregnancy weight","Severe dehydration and electrolyte imbalance","Ketones in the urine","Mild nausea only in the morning","Persistent vomiting interfering with daily activities"],correct:[0,1,2,4],
+r:"Hyperemesis gravidarum involves severe, persistent vomiting with weight loss, dehydration, electrolyte imbalance, and ketonuria. Mild morning nausea alone is normal pregnancy discomfort, not hyperemesis."},
+{topic:"Obstetrics", q:"A client is receiving oxytocin for labor induction. Which findings require the nurse to stop the infusion? Select all that apply.",
+opts:["Contractions lasting longer than 90 seconds","Uterine resting tone that remains firm between contractions","Fetal heart rate showing late decelerations","Contractions every 2–3 minutes lasting 40–60 seconds","Fetal bradycardia"],correct:[0,1,2,4],
+r:"Oxytocin should be stopped for uterine hyperstimulation (contractions >90 sec or <2 min apart), increased resting tone, nonreassuring FHR patterns (late decelerations, bradycardia). Normal contractions every 2–3 min lasting 40–60 sec are expected."},
+{topic:"Obstetrics", q:"Which are signs of cord prolapse? Select all that apply.",
+opts:["Sudden fetal bradycardia after rupture of membranes","Visible or palpable cord at the introitus","Variable decelerations on FHR monitoring","Sudden onset of painless bleeding","Client reports feeling something in the vagina"],correct:[0,1,2,4],
+r:"Cord prolapse presents with sudden fetal bradycardia or variable decelerations after ROM, a visible/palpable cord, and the sensation of something in the vagina. Painless bleeding suggests placenta previa, not cord prolapse."},
+{topic:"Obstetrics", q:"A client is diagnosed with cord prolapse. What is the priority nursing action?",
+opts:["Perform a sterile vaginal exam and push the cord back in","Place the client in Trendelenburg or knee-chest position and prepare for emergency cesarean","Administer oxytocin to speed delivery","Encourage the client to push with contractions"],correct:1,
+r:"For cord prolapse, the nurse relieves cord compression by positioning the client in Trendelenburg or knee-chest position (or elevating the presenting part), and prepares for emergency cesarean. The cord should NOT be pushed back in."},
+{topic:"Obstetrics", q:"Which are TRUE about the third stage of labor? Select all that apply.",
+opts:["It begins after delivery of the baby and ends with delivery of the placenta","It typically lasts 5–30 minutes","Signs of placental separation include a gush of blood and lengthening of the cord","It is the longest stage of labor","The placenta is usually delivered within 30 minutes"],correct:[0,1,2,4],
+r:"The third stage spans delivery of the baby to delivery of the placenta (usually 5–30 min). Signs of separation include a gush of blood, cord lengthening, and fundal elevation. The first stage is the longest; the third is the shortest."},
+{topic:"Obstetrics", q:"A client reports severe perineal pain and a bulging, bluish mass at the perineum after delivery. The nurse suspects:",
+opts:["Normal episiotomy healing","Vulvar hematoma","Uterine inversion","Cervical laceration"],correct:1,
+r:"A vulvar hematoma presents as a painful, bulging, bluish mass at the perineum due to bleeding into the tissues. It requires prompt assessment and possible surgical evacuation."},
+{topic:"Obstetrics", q:"Which are appropriate nursing interventions for a client with a fourth-degree perineal laceration? Select all that apply.",
+opts:["Apply ice to the perineum for the first 24 hours","Administer stool softeners as ordered","Teach the client to avoid straining during defecation","Encourage sitz baths after 24 hours","Use a peri-bottle after voiding and defecation"],correct:[0,1,2,3,4],
+r:"Fourth-degree lacerations (extending through the anal sphincter/rectum) require ice for the first 24 hours, stool softeners, avoiding straining, sitz baths after 24 hours, and peri-bottle use to prevent infection and promote healing."},
+{topic:"Obstetrics", q:"A client at 20 weeks reports a white, cheesy vaginal discharge with itching. The nurse suspects:",
+opts:["Bacterial vaginosis","Candidiasis (yeast infection)","Trichomoniasis","Normal leukorrhea"],correct:1,
+r:"Candidiasis presents with thick, white, cheesy discharge and vulvovaginal itching. It is common in pregnancy due to hormonal changes and is treated with topical antifungals."},
+{topic:"Obstetrics", q:"Which infections are associated with an increased risk of preterm labor? Select all that apply.",
+opts:["Bacterial vaginosis","Chlamydia trachomatis","Trichomonas vaginalis","Asymptomatic bacteriuria","Group B Streptococcus colonization"],correct:[0,1,2,3,4],
+r:"All of these infections have been associated with an increased risk of preterm labor, premature rupture of membranes, and other pregnancy complications. Screening and treatment are important components of prenatal care."},
 
 // ---------- Normal Pediatrics Nursing ----------
 {topic:"Pediatrics", q:"At what age does a healthy infant typically achieve head control while in a prone position?",
@@ -194,6 +335,147 @@ r:"Rear-facing car seats better protect the head, neck, and spine in a crash; gu
 {topic:"Pediatrics", q:"At approximately what age does the first primary (deciduous) tooth typically erupt?",
 opts:["2 months","6 months","12 months","2 years"],correct:1,
 r:"The first primary tooth (usually a lower central incisor) typically erupts around 6 months of age, though timing varies among healthy infants."},
+{topic:"Pediatrics", q:"A nurse is assessing a 6-month-old infant. Which developmental milestones are expected at this age? Select all that apply.",
+opts:["Sits with support","Rolls from front to back","Transfers objects from hand to hand","Walks independently","Bangs objects on a table"],correct:[0,1,2,4],
+r:"By 6 months, infants typically sit with support, roll over, transfer objects between hands, and bang objects. Independent walking is expected around 12 months."},
+{topic:"Pediatrics", q:"A nurse is assessing a 12-month-old. Which milestones are expected? Select all that apply.",
+opts:["Walks independently or with one hand held","Says 1–2 words with meaning","Uses a pincer grasp","Stacks 6 blocks","Pulls to a standing position"],correct:[0,1,2,4],
+r:"By 12 months, infants walk with assistance or independently, say a few words, use a pincer grasp, and pull to stand. Stacking 6 blocks is expected around 18–24 months."},
+{topic:"Pediatrics", q:"At what age does a toddler typically begin to run and climb stairs with both feet on each step?",
+opts:["12 months","18 months","24 months","36 months"],correct:2,
+r:"By 24 months, toddlers can run and climb stairs placing both feet on each step. By 36 months, they alternate feet when climbing stairs."},
+{topic:"Pediatrics", q:"A nurse is assessing a 3-year-old. Which developmental milestones are expected? Select all that apply.",
+opts:["Rides a tricycle","Speaks in 3-word sentences","Knows own name, age, and sex","Copies a circle","Ties shoelaces independently"],correct:[0,1,2,3],
+r:"By 3 years, children ride a tricycle, speak in short sentences, know basic personal information, and copy a circle. Tying shoelaces is expected around 5–6 years."},
+{topic:"Pediatrics", q:"Which fine motor milestone is expected in a 4-year-old?",
+opts:["Draws a stick figure with 2–4 body parts","Uses scissors to cut a straight line","Buttons large buttons","Copies a square"],correct:0,
+r:"By 4 years, children can draw a person with 2–4 body parts. Copying a square is expected at 4–5 years, cutting with scissors at 3–4 years, and buttoning at 3–4 years."},
+{topic:"Pediatrics", q:"A nurse is teaching a parent about toilet training. Which readiness signs should the nurse include? Select all that apply.",
+opts:["Staying dry for at least 2 hours","Showing interest in the toilet","Being able to pull pants up and down","Verbalizing the need to go","Being 12 months old"],correct:[0,1,2,3],
+r:"Toilet training readiness includes bladder control (dry for 2+ hours), interest in the toilet, dressing skills, and communication. Most children are not ready until 18–24 months."},
+{topic:"Pediatrics", q:"Which approach best supports a hospitalized toddler's developmental needs?",
+opts:["Explain procedures in detailed medical terms","Allow the toddler to keep a favorite blanket or toy","Restrict parental presence to visiting hours","Discourage play to promote rest"],correct:1,
+r:"Toddlers need familiar objects (transitional items) for security and parental presence to reduce separation anxiety. Explanations should be simple, and play should be encouraged."},
+{topic:"Pediatrics", q:"A nurse is preparing a 4-year-old for a procedure. Which technique is most appropriate?",
+opts:["Explain using simple words and allow the child to handle safe equipment","Give a detailed explanation of the procedure 1 day in advance","Tell the child it won't hurt at all","Perform the procedure without explanation to reduce anxiety"],correct:0,
+r:"Preschoolers benefit from simple explanations, play therapy, and handling safe equipment. Detailed explanations should be given shortly before the procedure, and false reassurance should be avoided."},
+{topic:"Pediatrics", q:"Which statement by a parent indicates correct understanding of car seat safety for a 3-year-old?",
+opts:["'He can use a booster seat now.'","'He should remain in a forward-facing car seat with a harness.'","'He can sit in the front seat if the airbag is off.'","'He only needs a seatbelt now.'"],correct:1,
+r:"Children should remain in a forward-facing car seat with a harness until they reach the seat's height/weight limit (usually around 4–7 years). Booster seats are for older, larger children; the front seat is not recommended until age 13."},
+{topic:"Pediatrics", q:"A nurse is assessing a 5-year-old. Which developmental milestones are expected? Select all that apply.",
+opts:["Ties shoelaces","Names 4 colors","Counts 10 or more objects","Reads simple sentences","Draws a person with 6 body parts"],correct:[0,1,2,4],
+r:"By 5 years, children tie shoelaces, name colors, count 10+ objects, and draw a person with 6 body parts. Reading simple sentences is expected around 6–7 years."},
+{topic:"Pediatrics", q:"A nurse is assessing a 6-year-old's cognitive development according to Piaget. Which behavior indicates the concrete operational stage?",
+opts:["Egocentric thinking","Conservation of mass and volume","Abstract reasoning","Magical thinking"],correct:1,
+r:"Concrete operational thought (7–11 years) includes conservation, reversibility, and logical thinking about concrete objects. Egocentric and magical thinking are preoperational (2–7 years); abstract reasoning is formal operational (11+ years)."},
+{topic:"Pediatrics", q:"A 7-year-old is hospitalized. Which nursing intervention best supports Erikson's stage of industry vs. inferiority?",
+opts:["Allow the child to complete schoolwork and praise accomplishments","Provide only passive activities like watching TV","Discourage interaction with other children","Focus on rest and limit all activity"],correct:0,
+r:"School-age children need to feel competent and productive. Continuing schoolwork, praising achievements, and encouraging peer interaction support industry; restriction and lack of accomplishment foster inferiority."},
+{topic:"Pediatrics", q:"A nurse is assessing a 10-year-old. Which developmental milestones are expected? Select all that apply.",
+opts:["Understands concepts of right and wrong","Develops a sense of humor","Participates in team sports","Has a strong sense of identity","Begins to develop secondary sex characteristics"],correct:[0,1,2],
+r:"School-age children develop moral reasoning, humor, and enjoy team activities. Identity formation and secondary sex characteristics emerge in adolescence (11+ years)."},
+{topic:"Pediatrics", q:"Which immunization is given at 6 weeks according to the Philippine EPI schedule? Select all that apply.",
+opts:["Pentavalent vaccine (DPT-HepB-Hib)","Oral polio vaccine (OPV)","BCG","Hepatitis B","Measles-containing vaccine"],correct:[0,1,3],
+r:"At 6 weeks, the Philippine EPI gives Pentavalent (DPT-HepB-Hib), OPV, and Hepatitis B. BCG is given at birth; measles-containing vaccine at 9 months."},
+{topic:"Pediatrics", q:"At what age is the first dose of the measles-containing vaccine (MMR/AMV) given in the Philippine EPI?",
+opts:["6 weeks","9 months","12 months","15 months"],correct:1,
+r:"The first measles-containing vaccine dose is given at 9 months under the Philippine EPI, with a second dose at 12 months."},
+{topic:"Pediatrics", q:"Which vaccines are given at 12–15 months in the Philippine EPI? Select all that apply.",
+opts:["Measles-containing vaccine (2nd dose)","MMR","Varicella","Hepatitis A","Pentavalent vaccine (booster)"],correct:[0,1],
+r:"At 12–15 months, the Philippine EPI gives the 2nd measles-containing vaccine dose and MMR. Varicella and Hepatitis A may be given in the private sector but are not part of the routine EPI schedule."},
+{topic:"Pediatrics", q:"A parent asks about the Pentavalent vaccine. Which diseases does it protect against? Select all that apply.",
+opts:["Diphtheria","Pertussis","Tetanus","Hepatitis B","Haemophilus influenzae type b"],correct:[0,1,2,3,4],
+r:"The Pentavalent vaccine protects against Diphtheria, Pertussis, Tetanus, Hepatitis B, and Haemophilus influenzae type b (Hib)."},
+{topic:"Pediatrics", q:"A nurse is teaching a parent about vaccine side effects. Which are expected after DPT vaccination? Select all that apply.",
+opts:["Low-grade fever","Mild fussiness","Redness and swelling at the injection site","High fever with seizures","Anaphylaxis"],correct:[0,1,2],
+r:"Expected DPT side effects include low-grade fever, fussiness, and local reactions. High fever with seizures and anaphylaxis are rare and require immediate medical attention."},
+{topic:"Pediatrics", q:"Which vaccine is contraindicated in a child with severe immunodeficiency?",
+opts:["Inactivated polio vaccine (IPV)","Oral polio vaccine (OPV)","Hepatitis B vaccine","DPT vaccine"],correct:1,
+r:"OPV is a live attenuated vaccine and is contraindicated in immunocompromised children due to the risk of vaccine-associated paralytic polio. IPV is the safer alternative."},
+{topic:"Pediatrics", q:"A nurse is assessing a newborn's reflexes. Which reflexes are expected in a healthy newborn? Select all that apply.",
+opts:["Moro reflex","Rooting reflex","Palmar grasp","Babinski reflex","Knee-jerk reflex absent"],correct:[0,1,2,3],
+r:"Newborns should have Moro, rooting, palmar grasp, and Babinski reflexes. Absence of these or persistence beyond expected age may indicate neurologic problems."},
+{topic:"Pediatrics", q:"At what age does the Moro reflex typically disappear?",
+opts:["1–2 months","3–4 months","6 months","9 months"],correct:1,
+r:"The Moro reflex typically disappears by 3–4 months. Persistence beyond this age may indicate neurologic immaturity or damage."},
+{topic:"Pediatrics", q:"A nurse is assessing a newborn. Which findings are normal? Select all that apply.",
+opts:["Respiratory rate of 40–60 breaths/min","Heart rate of 120–160 bpm","Temperature of 36.5–37.5°C (axillary)","Blood pressure of 120/80 mmHg","Weight loss up to 10% of birth weight in the first week"],correct:[0,1,2,4],
+r:"Newborn norms include RR 40–60, HR 120–160, axillary temp 36.5–37.5°C, and up to 10% weight loss in the first week. Newborn BP is much lower (around 60–80/40–50 mmHg)."},
+{topic:"Pediatrics", q:"A newborn is jaundiced within the first 24 hours of life. What is the priority nursing action?",
+opts:["Reassure the parents that this is normal","Notify the physician immediately; this may indicate pathologic jaundice","Increase oral feedings only","Place the newborn in a dark room"],correct:1,
+r:"Jaundice within the first 24 hours is always pathologic and may indicate hemolytic disease, sepsis, or other serious conditions. It requires immediate medical evaluation and possible phototherapy."},
+{topic:"Pediatrics", q:"A nurse is teaching a parent about physiologic jaundice. Which statements are correct? Select all that apply.",
+opts:["It typically appears after 24 hours of life","It peaks at 3–5 days in term infants","It is caused by immature liver function","It requires immediate exchange transfusion","It may be treated with phototherapy if levels are high"],correct:[0,1,2,4],
+r:"Physiologic jaundice appears after 24 hours, peaks at 3–5 days, and is due to immature glucuronyl transferase activity. Treatment includes phototherapy if levels are high; exchange transfusion is reserved for severe cases."},
+{topic:"Pediatrics", q:"A newborn is receiving phototherapy. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Cover the eyes with protective shields","Monitor temperature every 2–4 hours","Ensure adequate hydration and feeding","Remove the newborn from phototherapy for all feedings","Apply lotion to the skin to prevent dryness"],correct:[0,1,2],
+r:"During phototherapy, cover the eyes, monitor temperature, and ensure hydration. Feedings can continue under phototherapy (or with brief interruptions per policy). Lotions and oils should be avoided as they can cause burns."},
+{topic:"Pediatrics", q:"A nurse is assessing a child with suspected meningitis. Which findings are expected? Select all that apply.",
+opts:["Nuchal rigidity","Positive Kernig's sign","Positive Brudzinski's sign","Bulging fontanel in infants","Hyperactive deep tendon reflexes"],correct:[0,1,2,3],
+r:"Meningitis presents with nuchal rigidity, positive Kernig's and Brudzinski's signs, and a bulging fontanel in infants. Deep tendon reflexes are typically normal or decreased, not hyperactive."},
+{topic:"Pediatrics", q:"A child is diagnosed with bacterial meningitis. Which isolation precautions are required?",
+opts:["Standard precautions only","Droplet precautions until 24 hours after antibiotics","Airborne precautions","Contact precautions"],correct:1,
+r:"Bacterial meningitis (e.g., from N. meningitidis, H. influenzae) requires droplet precautions until 24 hours after the start of effective antibiotic therapy."},
+{topic:"Pediatrics", q:"Which findings in a child with Kawasaki disease require immediate intervention? Select all that apply.",
+opts:["Cracked lips and strawberry tongue","Desquamation of the fingers and toes","Temperature of 39.5°C for 5 days","Chest pain or signs of cardiac involvement","Bilateral conjunctivitis"],correct:[2,3],
+r:"Persistent high fever and cardiac involvement (myocarditis, coronary aneurysm) are the most concerning features requiring immediate intervention. The other findings are classic diagnostic signs but not emergencies themselves."},
+{topic:"Pediatrics", q:"A child with Kawasaki disease is receiving IVIG. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Monitor vital signs during infusion","Assess for allergic reactions","Ensure adequate hydration","Administer live vaccines immediately after IVIG","Monitor for signs of heart failure"],correct:[0,1,2,4],
+r:"During IVIG, monitor vitals, watch for reactions, maintain hydration, and monitor cardiac status. Live vaccines should be deferred for 11 months after IVIG due to reduced efficacy."},
+{topic:"Pediatrics", q:"A child with Tetralogy of Fallot is having a 'tet spell.' What is the priority nursing action?",
+opts:["Place the child in a supine position","Administer oxygen and place the child in a knee-chest position","Encourage vigorous activity","Withhold oxygen to prevent hyperoxia"],correct:1,
+r:"During a tet spell, the knee-chest position increases systemic vascular resistance, reducing right-to-left shunting and improving pulmonary blood flow. Oxygen should be administered."},
+{topic:"Pediatrics", q:"Which congenital heart defects are cyanotic? Select all that apply.",
+opts:["Tetralogy of Fallot","Truncus arteriosus","Tricuspid atresia","Ventricular septal defect","Transposition of the great arteries"],correct:[0,1,2,4],
+r:"Cyanotic defects include Tetralogy of Fallot, truncus arteriosus, tricuspid atresia, transposition of the great arteries, and total anomalous pulmonary venous return. VSD is an acyanotic defect."},
+{topic:"Pediatrics", q:"A child with heart failure is receiving digoxin. Which findings indicate digoxin toxicity? Select all that apply.",
+opts:["Bradycardia","Vomiting","Visual disturbances","Tachycardia","Poor feeding"],correct:[0,1,2,4],
+r:"Digoxin toxicity in children presents with bradycardia, vomiting, visual disturbances, and poor feeding. Tachycardia is not typical; the heart rate is usually slow."},
+{topic:"Pediatrics", q:"A nurse is teaching a parent about digoxin administration. Which instructions are correct? Select all that apply.",
+opts:["Administer at the same time each day","Check the pulse before administration","Hold the dose if the pulse is below the ordered limit","Double the dose if a dose is missed","Do not mix with food if the child refuses"],correct:[0,1,2],
+r:"Digoxin should be given at the same time daily, with pulse check before administration, and held if bradycardic. Missed doses should not be doubled; the nurse should be notified."},
+{topic:"Pediatrics", q:"A child with nephrotic syndrome is receiving prednisone. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Monitor blood pressure and weight daily","Monitor for signs of infection","Encourage a low-sodium diet","Administer live vaccines during therapy","Monitor blood glucose"],correct:[0,1,2,4],
+r:"Corticosteroid therapy requires monitoring of BP, weight, infection signs, and glucose. Live vaccines are contraindicated during immunosuppressive therapy."},
+{topic:"Pediatrics", q:"A child with nephrotic syndrome has generalized edema. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Monitor daily weight","Measure abdominal girth","Encourage a low-sodium diet","Restrict fluids as ordered","Encourage vigorous activity"],correct:[0,1,2,3],
+r:"For nephrotic syndrome with edema, monitor weight and abdominal girth, restrict sodium and fluids as ordered, and promote rest. Vigorous activity is not encouraged during acute edema."},
+{topic:"Pediatrics", q:"A child with sickle cell disease is admitted in vaso-occlusive crisis. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Administer IV fluids","Administer analgesics as ordered","Apply warm compresses to painful areas","Encourage vigorous exercise","Monitor for signs of infection"],correct:[0,1,2,4],
+r:"During vaso-occlusive crisis, hydration, analgesia, warm compresses, and infection monitoring are appropriate. Vigorous exercise can worsen sickling and should be avoided."},
+{topic:"Pediatrics", q:"A child with hemophilia is admitted with joint bleeding. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Apply ice to the affected joint","Elevate the affected extremity","Administer factor replacement as ordered","Encourage active range of motion immediately","Monitor for signs of internal bleeding"],correct:[0,1,2,4],
+r:"For joint bleeding in hemophilia, ice, elevation, factor replacement, and monitoring for bleeding are appropriate. Active range of motion should be avoided during acute bleeding."},
+{topic:"Pediatrics", q:"Which findings suggest increased intracranial pressure (ICP) in an infant? Select all that apply.",
+opts:["Bulging fontanel","High-pitched cry","Sunset eyes","Increased appetite","Separated cranial sutures"],correct:[0,1,2,4],
+r:"Increased ICP in infants presents with a bulging fontanel, high-pitched cry, sunset eyes, and separated sutures. Appetite is typically decreased, not increased."},
+{topic:"Pediatrics", q:"A child with increased ICP is admitted. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Elevate the head of the bed 15–30 degrees","Maintain a quiet, dimly lit environment","Cluster nursing care to minimize stimulation","Perform vigorous suctioning every hour","Monitor neurologic status frequently"],correct:[0,1,2,4],
+r:"For increased ICP, elevate the head of the bed, minimize stimulation, cluster care, and monitor neurologic status. Vigorous suctioning can increase ICP and should be avoided or done carefully."},
+{topic:"Pediatrics", q:"A nurse is assessing a child with suspected epiglottitis. Which findings are expected? Select all that apply.",
+opts:["Drooling","Tripod positioning","Muffled voice","Barking cough","High fever"],correct:[0,1,2,4],
+r:"Epiglottitis presents with drooling, tripod positioning, muffled voice, and high fever. A barking cough is characteristic of croup, not epiglottitis."},
+{topic:"Pediatrics", q:"A child with croup is admitted. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Administer humidified oxygen","Keep the child calm","Administer corticosteroids as ordered","Perform throat inspection with a tongue depressor","Monitor for respiratory distress"],correct:[0,1,2,4],
+r:"For croup, humidified oxygen, keeping the child calm, corticosteroids, and monitoring for distress are appropriate. Throat inspection with a tongue depressor is contraindicated in suspected epiglottitis and should be avoided."},
+{topic:"Pediatrics", q:"Which findings suggest respiratory distress in a child? Select all that apply.",
+opts:["Nasal flaring","Intercostal retractions","Grunting","Bradycardia","Stridor"],correct:[0,1,2,4],
+r:"Respiratory distress presents with nasal flaring, retractions, grunting, stridor, and tachypnea. Bradycardia is a late sign of severe hypoxia, not an early sign of distress."},
+{topic:"Pediatrics", q:"A child with asthma is prescribed a peak flow meter. Which instructions are correct? Select all that apply.",
+opts:["Stand or sit upright","Take a deep breath and blow out as hard and fast as possible","Record the best of three attempts","Use the meter only during exacerbations","Use the meter at the same time each day"],correct:[0,1,2,4],
+r:"Peak flow meters should be used upright, with a deep breath and forceful exhalation, recording the best of three attempts, and used consistently (daily). They are not used only during exacerbations."},
+{topic:"Pediatrics", q:"A child is prescribed an albuterol inhaler with a spacer. Which instructions are correct? Select all that apply.",
+opts:["Shake the inhaler before use","Use the spacer to improve delivery","Wait 30–60 seconds between puffs","Rinse the mouth after use","Administer the bronchodilator after the corticosteroid"],correct:[0,1,2,3],
+r:"Albuterol should be shaken, used with a spacer, with 30–60 seconds between puffs, and the mouth rinsed after use. Bronchodilators are administered BEFORE corticosteroids, not after."},
+{topic:"Pediatrics", q:"Which are signs of dehydration in an infant? Select all that apply.",
+opts:["Sunken fontanel","Decreased urine output","Dry mucous membranes","Weight gain","Poor skin turgor"],correct:[0,1,2,4],
+r:"Dehydration in infants presents with a sunken fontanel, decreased urine output, dry mucous membranes, and poor skin turgor. Weight loss, not gain, occurs with dehydration."},
+{topic:"Pediatrics", q:"A child with severe dehydration is receiving IV fluids. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Monitor intake and output","Assess vital signs frequently","Monitor for signs of fluid overload","Weigh the child daily","Restrict all oral fluids"],correct:[0,1,2,3],
+r:"During IV rehydration, monitor I&O, vitals, signs of overload, and daily weight. Oral fluids may be allowed as tolerated depending on the child's condition; complete restriction is not routine."},
+{topic:"Pediatrics", q:"A child with diarrhea is being cared for at home. Which instructions should the nurse include? Select all that apply.",
+opts:["Give oral rehydration solution (ORS) frequently in small amounts","Continue breastfeeding","Avoid sugary drinks and juices","Withhold all food for 24 hours","Monitor for signs of dehydration"],correct:[0,1,2,4],
+r:"Home management of diarrhea includes ORS, continued breastfeeding, avoiding sugary drinks, and monitoring for dehydration. Food should not be withheld for 24 hours; continue age-appropriate feeds."},
 
 // ---------- Fundamentals of Nursing 2 ----------
 {topic:"Fundamentals", q:"When performing hand hygiene with alcohol-based sanitizer, how long should the friction/rubbing process last?",
@@ -245,6 +527,120 @@ r:"Nasal cannula flow rates above 6 L/min do not significantly increase delivere
 {topic:"Fundamentals", q:"What is the primary purpose of performing passive range-of-motion (ROM) exercises for an immobile client?",
 opts:["To build muscle strength","To prevent joint contractures and maintain joint mobility","To increase the client's heart rate for cardiovascular fitness","To reduce the need for pain medication"],correct:1,
 r:"Passive ROM exercises move joints through their range without client effort, helping prevent contractures, maintain flexibility, and reduce complications of immobility, though they do not build muscle strength."},
+{topic:"Fundamentals", q:"A nurse is performing a comprehensive health assessment. Which components are included in the general survey? Select all that apply.",
+opts:["Level of consciousness","Apparent state of health","Speech and hearing","Vital signs","Body build and posture"],correct:[0,1,2,4],
+r:"The general survey includes observation of LOC, apparent health, speech/hearing, body build, posture, grooming, and behavior. Vital signs are a separate, distinct assessment component."},
+{topic:"Fundamentals", q:"Which sequence correctly reflects the order of a standard abdominal assessment?",
+opts:["Inspection, palpation, percussion, auscultation","Inspection, auscultation, percussion, palpation","Auscultation, inspection, palpation, percussion","Percussion, inspection, auscultation, palpation"],correct:1,
+r:"For the abdomen, auscultation is performed BEFORE percussion and palpation because these maneuvers can alter bowel sounds. The correct sequence is inspection, auscultation, percussion, palpation."},
+{topic:"Fundamentals", q:"A nurse is assessing a client's lung sounds. Which findings are considered normal? Select all that apply.",
+opts:["Vesicular breath sounds over peripheral lung fields","Bronchial breath sounds over the trachea","Crackles in the lower lung bases","Bronchovesicular sounds over the mainstem bronchi","Wheezing on expiration"],correct:[0,1,3],
+r:"Normal lung sounds include vesicular over the periphery, bronchial over the trachea, and bronchovesicular over the mainstem bronchi. Crackles and wheezing are adventitious sounds indicating pathology."},
+{topic:"Fundamentals", q:"A nurse is documenting a client's bowel sounds. Which description is correct for normal bowel sounds?",
+opts:["High-pitched, gurgling sounds occurring every 5–15 seconds","Absent sounds for 5 minutes","Loud, high-pitched rushing sounds","Tinkling sounds with a metallic quality"],correct:0,
+r:"Normal bowel sounds are high-pitched, gurgling, and occur every 5–15 seconds. Absent sounds, borborygmi (loud rushing), and tinkling/metallic sounds are abnormal findings."},
+{topic:"Fundamentals", q:"A nurse is assessing a client's peripheral pulses. Which scale correctly describes a normal pulse?",
+opts:["0 = absent, 1+ = weak, 2+ = normal, 3+ = increased, 4+ = bounding","0 = normal, 1+ = bounding, 2+ = weak, 3+ = absent, 4+ = increased","1+ = normal, 2+ = weak, 3+ = bounding","0 = bounding, 1+ = normal, 2+ = weak, 3+ = absent"],correct:0,
+r:"The standard pulse scale is 0 (absent), 1+ (weak/thready), 2+ (normal), 3+ (increased), and 4+ (bounding/full)."},
+{topic:"Fundamentals", q:"Which are appropriate sites for assessing a client's core body temperature? Select all that apply.",
+opts:["Rectal","Tympanic","Oral","Axillary","Temporal artery"],correct:[0,1,2,4],
+r:"Rectal, tympanic, oral, and temporal artery thermometry approximate core temperature. Axillary temperature is the least accurate and typically reads 0.5°C lower than core."},
+{topic:"Fundamentals", q:"A nurse is preparing to administer a subcutaneous injection. Which needle angle is correct?",
+opts:["15 degrees","45 degrees","90 degrees","25 degrees"],correct:1,
+r:"Subcutaneous injections are typically given at a 45-degree angle (or 90 degrees for clients with adequate subcutaneous tissue). Intramuscular injections use 90 degrees; intradermal uses 5–15 degrees."},
+{topic:"Fundamentals", q:"Which are appropriate sites for intramuscular injections? Select all that apply.",
+opts:["Ventrogluteal","Vastus lateralis","Deltoid","Dorsogluteal","Dorsal forearm"],correct:[0,1,2,3],
+r:"IM sites include ventrogluteal (preferred for adults), vastus lateralis (preferred for infants), deltoid, and dorsogluteal (used with caution due to sciatic nerve risk). The dorsal forearm is used for intradermal testing."},
+{topic:"Fundamentals", q:"A nurse is performing an intradermal injection for tuberculosis skin testing. Which site is correct?",
+opts:["Deltoid muscle","Inner forearm","Vastus lateralis","Ventrogluteal"],correct:1,
+r:"Intradermal injections (Mantoux test, allergy testing) are given on the inner forearm using a 5–15 degree angle and a small-gauge needle."},
+{topic:"Fundamentals", q:"A nurse is preparing to administer a medication via a nasogastric tube. Which actions are appropriate? Select all that apply.",
+opts:["Verify tube placement before administration","Flush the tube with water before and after each medication","Crush enteric-coated tablets for easier administration","Administer medications one at a time","Position the client upright during administration"],correct:[0,1,3,4],
+r:"Before NG medication administration: verify placement, flush before/after, give meds one at a time, and position upright. Enteric-coated and sustained-release tablets should NOT be crushed."},
+{topic:"Fundamentals", q:"Which findings indicate a client may be experiencing an allergic reaction to a medication? Select all that apply.",
+opts:["Urticaria","Wheezing","Hypotension","Bradycardia","Angioedema"],correct:[0,1,2,4],
+r:"Allergic reactions present with urticaria, wheezing, hypotension, and angioedema. Tachycardia, not bradycardia, is typical in anaphylaxis due to compensatory mechanisms."},
+{topic:"Fundamentals", q:"A nurse is preparing to administer a blood transfusion. Which actions are appropriate? Select all that apply.",
+opts:["Verify the blood product with another nurse","Use a 0.9% NaCl solution to prime the tubing","Administer the transfusion within 30 minutes of receiving the unit","Monitor vital signs before, during, and after transfusion","Infuse the unit over 4 hours maximum"],correct:[0,1,3,4],
+r:"Blood transfusion requires two-nurse verification, priming with 0.9% NaCl (never lactated Ringer's), transfusion within 30 minutes of receipt, vital sign monitoring, and completion within 4 hours."},
+{topic:"Fundamentals", q:"A client receiving a blood transfusion develops fever, chills, and flank pain. What is the priority nursing action?",
+opts:["Slow the transfusion and continue monitoring","Stop the transfusion immediately and maintain IV access with new tubing","Administer the remaining blood faster","Document the finding and continue the transfusion"],correct:1,
+r:"These findings suggest a hemolytic transfusion reaction. The transfusion must be stopped immediately, IV access maintained with new tubing and 0.9% NaCl, and the physician notified."},
+{topic:"Fundamentals", q:"Which actions reflect proper sterile technique when setting up a sterile field? Select all that apply.",
+opts:["Open the sterile package away from the body","Keep the sterile field above waist level","Reach across the sterile field to place items","Consider any item below waist level contaminated","Avoid touching the inside of the sterile package"],correct:[0,1,3,4],
+r:"Sterile technique: open packages away from the body, keep the field above waist level, consider items below waist contaminated, and never touch the inside of the package. Reaching across the field contaminates it."},
+{topic:"Fundamentals", q:"A nurse is performing a wound dressing change. Which actions require sterile technique? Select all that apply.",
+opts:["Changing a surgical incision dressing","Inserting a urinary catheter","Changing a chronic pressure ulcer dressing","Performing a venipuncture","Changing a dressing on a draining wound"],correct:[0,1,3,4],
+r:"Sterile technique is required for surgical incisions, catheter insertion, venipuncture, and draining wounds. Chronic pressure ulcer dressings may use clean technique depending on facility policy and wound status."},
+{topic:"Fundamentals", q:"Which findings indicate a wound infection? Select all that apply.",
+opts:["Purulent drainage","Increased redness and warmth","Fever","Decreased pain","Wound dehiscence"],correct:[0,1,2,4],
+r:"Wound infection presents with purulent drainage, redness/warmth, fever, and possible dehiscence. Pain typically INCREASES with infection, not decreases."},
+{topic:"Fundamentals", q:"A nurse is teaching a client about a low-sodium diet. Which foods should the client avoid? Select all that apply.",
+opts:["Canned soups","Processed meats","Fresh fruits","Pickled foods","Frozen dinners"],correct:[0,1,3,4],
+r:"High-sodium foods include canned soups, processed meats, pickled foods, and frozen dinners. Fresh fruits are naturally low in sodium and encouraged."},
+{topic:"Fundamentals", q:"A client is prescribed a clear liquid diet. Which items are appropriate? Select all that apply.",
+opts:["Clear broth","Gelatin","Apple juice","Ice cream","Black coffee"],correct:[0,1,2,4],
+r:"Clear liquids include broth, gelatin, clear juices, black coffee, tea, and popsicles. Ice cream is a full liquid, not clear liquid."},
+{topic:"Fundamentals", q:"A nurse is teaching a client about a diabetic diet. Which instructions are correct? Select all that apply.",
+opts:["Eat meals at consistent times","Choose complex carbohydrates","Limit refined sugars","Skip meals to control blood sugar","Monitor blood glucose as ordered"],correct:[0,1,2,4],
+r:"Diabetic diet teaching includes consistent meal times, complex carbs, limiting refined sugars, and glucose monitoring. Skipping meals can cause hypoglycemia and is not recommended."},
+{topic:"Fundamentals", q:"Which findings indicate a client is at risk for falls? Select all that apply.",
+opts:["History of previous falls","Use of sedatives or diuretics","Impaired mobility or balance","Age over 65","Normal vision and gait"],correct:[0,1,2,3],
+r:"Fall risk factors include previous falls, medications (sedatives, diuretics), impaired mobility/balance, and age over 65. Normal vision and gait are protective, not risk factors."},
+{topic:"Fundamentals", q:"A nurse is implementing fall precautions. Which interventions are appropriate? Select all that apply.",
+opts:["Keep the bed in the lowest position","Ensure call light is within reach","Keep the side rails up as needed","Use a bed alarm for high-risk clients","Leave the client unattended in the bathroom"],correct:[0,1,2,3],
+r:"Fall precautions include low bed position, call light accessibility, side rails as needed, and bed alarms. Clients should never be left unattended in the bathroom."},
+{topic:"Fundamentals", q:"A nurse is assessing a client for pressure injury risk. Which factors increase risk? Select all that apply.",
+opts:["Immobility","Incontinence","Poor nutrition","Moisture","Normal BMI"],correct:[0,1,2,3],
+r:"Pressure injury risk factors include immobility, incontinence, poor nutrition, and moisture. A normal BMI is not a risk factor."},
+{topic:"Fundamentals", q:"Which staging correctly describes a Stage 3 pressure injury?",
+opts:["Non-blanchable erythema of intact skin","Partial-thickness loss of skin with exposed dermis","Full-thickness loss of skin with visible subcutaneous fat","Full-thickness loss with exposed muscle, tendon, or bone"],correct:2,
+r:"Stage 3 is full-thickness loss with visible subcutaneous fat (but no exposed muscle, tendon, or bone, which would be Stage 4). Stage 1 is non-blanchable erythema, Stage 2 is partial-thickness loss."},
+{topic:"Fundamentals", q:"A nurse is caring for a client with an indwelling urinary catheter. Which interventions help prevent CAUTI? Select all that apply.",
+opts:["Perform hand hygiene before and after care","Keep the drainage bag below the level of the bladder","Secure the catheter to the leg","Irrigate the catheter routinely","Empty the drainage bag regularly"],correct:[0,1,2,4],
+r:"CAUTI prevention includes hand hygiene, keeping the bag below bladder level, securing the catheter, and regular emptying. Routine irrigation is not recommended and increases infection risk."},
+{topic:"Fundamentals", q:"Which findings indicate a urinary tract infection? Select all that apply.",
+opts:["Dysuria","Cloudy urine","Fever","Increased appetite","Urinary frequency"],correct:[0,1,2,4],
+r:"UTI presents with dysuria, cloudy/foul-smelling urine, fever, and frequency/urgency. Appetite is typically unaffected or decreased, not increased."},
+{topic:"Fundamentals", q:"A nurse is teaching a client about proper crutch walking. Which instructions are correct? Select all that apply.",
+opts:["Keep crutches 2–3 fingerbreadths below the axilla","Support weight on the hands, not the axillae","Move the affected leg with the crutches","Look down at the feet while walking","Wear non-skid shoes"],correct:[0,1,2,4],
+r:"Crutch walking: keep crutches below the axilla, support weight on hands, move affected leg with crutches, and wear non-skid shoes. Looking down at feet impairs balance; look forward."},
+{topic:"Fundamentals", q:"Which are appropriate nursing interventions for a client with an IV infusion? Select all that apply.",
+opts:["Assess the site for redness, swelling, or pain","Monitor the flow rate","Change the IV site per facility policy","Flush the IV line with heparin routinely for all clients","Document the site and solution"],correct:[0,1,2,4],
+r:"IV care includes site assessment, flow rate monitoring, site rotation per policy, and documentation. Routine heparin flushing is not universal and depends on the type of access device."},
+{topic:"Fundamentals", q:"A nurse suspects an IV infiltration. Which findings support this? Select all that apply.",
+opts:["Swelling at the site","Coolness of the skin around the site","Pain at the site","Blood return in the tubing","Blanching at the site"],correct:[0,1,2,4],
+r:"Infiltration presents with swelling, coolness, pain, and blanching at the site. Blood return is typically absent or sluggish, not present."},
+{topic:"Fundamentals", q:"A nurse is teaching a client about the use of an incentive spirometer. Which instructions are correct? Select all that apply.",
+opts:["Sit upright","Exhale normally, then inhale slowly and deeply through the mouthpiece","Hold the breath for 3–5 seconds","Use 5–10 times per hour while awake","Exhale forcefully through the mouthpiece"],correct:[0,1,2,3],
+r:"Incentive spirometer use: sit upright, exhale normally, inhale slowly and deeply, hold 3–5 seconds, and use 5–10 times per hour. Exhalation is normal, not forceful, through the mouthpiece."},
+{topic:"Fundamentals", q:"Which findings indicate hypoxia in a client? Select all that apply.",
+opts:["Restlessness","Confusion","Cyanosis","Bradycardia","Increased respiratory rate"],correct:[0,1,2,4],
+r:"Hypoxia presents with restlessness, confusion, cyanosis (late sign), and tachypnea. Tachycardia, not bradycardia, is an early sign; bradycardia is a late, ominous sign."},
+{topic:"Fundamentals", q:"A nurse is caring for a client with an order for oxygen therapy. Which safety measures are appropriate? Select all that apply.",
+opts:["Post 'No Smoking' signs","Keep oxygen equipment away from heat sources","Use petroleum-based products on the face","Ensure electrical equipment is grounded","Store oxygen cylinders upright and secured"],correct:[0,1,3,4],
+r:"Oxygen safety includes no-smoking signs, keeping equipment away from heat, grounding electrical equipment, and securing cylinders upright. Petroleum-based products are flammable and should be avoided."},
+{topic:"Fundamentals", q:"A nurse is teaching a client about pursed-lip breathing. Which instructions are correct? Select all that apply.",
+opts:["Inhale through the nose for 2 seconds","Exhale through pursed lips for 4 seconds","Use during activities that cause shortness of breath","Breathe rapidly through the mouth","Relax the shoulders and neck"],correct:[0,1,2,4],
+r:"Pursed-lip breathing: inhale through the nose for 2 seconds, exhale through pursed lips for 4 seconds, use during dyspnea, and relax shoulders/neck. Rapid mouth breathing is not part of this technique."},
+{topic:"Fundamentals", q:"A nurse is documenting a client's intake and output. Which items are included in intake? Select all that apply.",
+opts:["Oral fluids","IV fluids","Ice chips (recorded as half volume)","Tube feedings","Urine output"],correct:[0,1,2,3],
+r:"Intake includes oral fluids, IV fluids, ice chips (about half the volume), and tube feedings. Urine output is part of output, not intake."},
+{topic:"Fundamentals", q:"Which factors affect a client's blood pressure reading? Select all that apply.",
+opts:["Position of the arm","Cuff size","Recent caffeine or smoking","Time of day","Blood glucose level"],correct:[0,1,2,3],
+r:"BP is affected by arm position, cuff size, recent caffeine/smoking, and time of day. Blood glucose does not directly affect BP measurement."},
+{topic:"Fundamentals", q:"A nurse is teaching a client about home blood pressure monitoring. Which instructions are correct? Select all that apply.",
+opts:["Sit quietly for 5 minutes before measuring","Use the correct cuff size","Place the cuff on the bare arm","Measure after exercise to get an accurate reading","Record readings for the physician"],correct:[0,1,2,4],
+r:"Home BP monitoring: rest 5 minutes, use correct cuff size, place on bare arm, and record readings. Measuring after exercise can falsely elevate BP and should be avoided."},
+{topic:"Fundamentals", q:"Which findings indicate a client may have a hearing impairment? Select all that apply.",
+opts:["Frequently asking others to repeat themselves","Turning up the TV volume","Speaking in a monotone voice","Responding inappropriately to questions","Complaining of tinnitus"],correct:[0,1,2,3,4],
+r:"All of these can indicate hearing impairment: asking for repetition, turning up volume, monotone speech (because the client can't hear their own voice quality), inappropriate responses, and tinnitus."},
+{topic:"Fundamentals", q:"A nurse is communicating with a client who is hearing impaired. Which strategies are appropriate? Select all that apply.",
+opts:["Face the client when speaking","Speak clearly and slowly","Use written communication if needed","Shout loudly to ensure the client hears","Reduce background noise"],correct:[0,1,2,4],
+r:"Communication strategies include facing the client, speaking clearly and slowly, using written communication, and reducing background noise. Shouting can distort sound and is not helpful."},
+{topic:"Fundamentals", q:"A nurse is teaching a client about the use of a walker. Which instructions are correct? Select all that apply.",
+opts:["Move the walker forward first, then step into it","Keep the walker at a comfortable distance in front","Look down at the feet while walking","Wear non-skid shoes","Use the walker on stairs without assistance initially"],correct:[0,1,3],
+r:"Walker use: move the walker forward, step into it, keep it at a comfortable distance, and wear non-skid shoes. Looking down impairs balance, and stairs require assistance initially."},
 
 // ---------- Normal Psychiatric Nursing ----------
 {topic:"Psychiatric", q:"Which nursing response demonstrates therapeutic communication with a client expressing sadness?",
@@ -296,6 +692,111 @@ r:"Direct, non-judgmental questioning about suicidal ideation does not increase 
 {topic:"Psychiatric", q:"In group therapy, a member who frequently summarizes what others have said and helps keep the group focused is fulfilling which role?",
 opts:["Blocker role","Task role (e.g., coordinator/clarifier)","Aggressor role","Self-confessor role"],correct:1,
 r:"Task roles in group dynamics (such as coordinating, clarifying, or summarizing) help the group achieve its goals, in contrast to disruptive roles like blocking or aggression, or self-focused roles like the self-confessor."},
+{topic:"Psychiatric", q:"A nurse is assessing a client with schizophrenia. Which findings are considered positive symptoms? Select all that apply.",
+opts:["Hallucinations","Delusions","Disorganized speech","Flat affect","Avolition"],correct:[0,1,2],
+r:"Positive symptoms are added experiences: hallucinations, delusions, disorganized speech/behavior. Negative symptoms (flat affect, avolition, anhedonia, alogia) reflect a loss of normal function."},
+{topic:"Psychiatric", q:"Which findings are negative symptoms of schizophrenia? Select all that apply.",
+opts:["Flat affect","Avolition","Anhedonia","Hallucinations","Alogia"],correct:[0,1,2,4],
+r:"Negative symptoms include flat affect, avolition (lack of motivation), anhedonia (inability to feel pleasure), alogia (poverty of speech), and social withdrawal. Hallucinations are positive symptoms."},
+{topic:"Psychiatric", q:"A client is experiencing auditory hallucinations. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Ask the client what the voices are saying","Provide reality orientation","Engage the client in simple, concrete activities","Agree with the hallucination to build trust","Redirect the client to reality-based topics"],correct:[0,1,2,4],
+r:"For hallucinations: assess content (especially command hallucinations), provide reality orientation, engage in activities, and redirect. Never agree with or validate the hallucination."},
+{topic:"Psychiatric", q:"A client states, 'I am the president of the Philippines.' The nurse recognizes this as:",
+opts:["A hallucination","A delusion of grandeur","A delusion of persecution","An illusion"],correct:1,
+r:"A delusion of grandeur is a false belief that one has exceptional power, identity, or importance. Delusions of persecution involve beliefs of being targeted or harmed."},
+{topic:"Psychiatric", q:"A client believes the government is poisoning the water supply. The nurse recognizes this as:",
+opts:["Delusion of grandeur","Delusion of persecution","Somatic delusion","Nihilistic delusion"],correct:1,
+r:"A delusion of persecution is a false belief that one is being harassed, threatened, or harmed by others. Somatic delusions involve body-related false beliefs; nihilistic delusions involve beliefs of nonexistence."},
+{topic:"Psychiatric", q:"A nurse is caring for a client with paranoid delusions. Which communication strategies are appropriate? Select all that apply.",
+opts:["Use a calm, non-threatening approach","Avoid touching the client without warning","Argue with the client about the delusion","Provide simple, honest explanations","Maintain consistent staff assignments"],correct:[0,1,3,4],
+r:"For paranoid clients: approach calmly, avoid unexpected touch, do not argue about delusions, give simple honest explanations, and maintain consistency. Arguing increases distrust and agitation."},
+{topic:"Psychiatric", q:"A client with schizophrenia is started on clozapine. Which findings require immediate intervention? Select all that apply.",
+opts:["Fever with sore throat","Severe dizziness on standing","WBC count of 2,500/mm³","Mild constipation","Sudden weight gain"],correct:[0,1,2],
+r:"Clozapine can cause agranulocytosis (fever, sore throat, low WBC) and severe orthostatic hypotension. These require immediate intervention. Mild constipation and weight gain are common side effects requiring monitoring but not emergencies."},
+{topic:"Psychiatric", q:"Which laboratory monitoring is required for a client on clozapine?",
+opts:["Liver function tests only","Absolute neutrophil count (ANC) monitoring","Serum lithium levels","Thyroid function tests"],correct:1,
+r:"Clozapine requires regular ANC monitoring due to the risk of agranulocytosis. In the Philippines, REMS-like protocols require weekly ANC for the first 6 months, then biweekly, then monthly."},
+{topic:"Psychiatric", q:"A client on risperidone reports breast tenderness and galactorrhea. The nurse recognizes this as:",
+opts:["A normal side effect that requires no intervention","Hyperprolactinemia due to dopamine blockade","A sign of tardive dyskinesia","An allergic reaction"],correct:1,
+r:"Risperidone and other antipsychotics block dopamine, which can increase prolactin levels (hyperprolactinemia), causing breast tenderness, galactorrhea, amenorrhea, and sexual dysfunction. It should be reported to the physician."},
+{topic:"Psychiatric", q:"Which findings indicate tardive dyskinesia? Select all that apply.",
+opts:["Involuntary tongue movements","Lip smacking","Facial grimacing","Rapid, involuntary limb movements","Sudden muscle spasms of the neck"],correct:[0,1,2,3],
+r:"Tardive dyskinesia involves involuntary, repetitive movements (tongue, lips, face, limbs) that develop after long-term antipsychotic use. Acute dystonia presents with sudden neck/face muscle spasms."},
+{topic:"Psychiatric", q:"A client on lithium reports increased urination and thirst. The nurse recognizes this as:",
+opts:["Lithium toxicity","Expected side effect of lithium (nephrogenic diabetes insipidus)","Sign of dehydration","Allergic reaction"],correct:1,
+r:"Lithium can cause nephrogenic diabetes insipidus, leading to polyuria and polydipsia. Clients should maintain adequate fluid intake (2–3 L/day) and report significant changes."},
+{topic:"Psychiatric", q:"Which factors increase the risk of lithium toxicity? Select all that apply.",
+opts:["Dehydration","Low-sodium diet","Use of NSAIDs","Regular exercise","Impaired renal function"],correct:[0,1,2,4],
+r:"Lithium toxicity risk increases with dehydration, low sodium intake, NSAIDs, and renal impairment. Regular exercise is not a direct risk factor, though dehydration from exercise can contribute."},
+{topic:"Psychiatric", q:"A nurse is teaching a client about lithium therapy. Which instructions are correct? Select all that apply.",
+opts:["Maintain consistent sodium intake","Drink 2–3 liters of fluid daily","Have serum lithium levels checked regularly","Stop the medication if you feel better","Report tremor, vomiting, or diarrhea"],correct:[0,1,2,4],
+r:"Lithium teaching: consistent sodium/fluid intake, regular level monitoring, and reporting toxicity signs. Medication should never be stopped abruptly without physician guidance."},
+{topic:"Psychiatric", q:"A client with major depressive disorder is started on sertraline. Which instructions should the nurse include? Select all that apply.",
+opts:["Take the medication in the morning","Report increased suicidal thoughts","Expect improvement within 1–2 weeks","Avoid alcohol","Do not stop the medication abruptly"],correct:[1,3,4],
+r:"Sertraline may be taken in the morning or evening (depending on side effects). Improvement takes 2–4 weeks. Clients should report increased suicidal thoughts, avoid alcohol, and not stop abruptly."},
+{topic:"Psychiatric", q:"A client on an SSRI develops agitation, hyperthermia, and muscle rigidity. The nurse suspects:",
+opts:["Neuroleptic malignant syndrome","Serotonin syndrome","Acute dystonia","Lithium toxicity"],correct:1,
+r:"Serotonin syndrome presents with mental status changes, autonomic instability (hyperthermia, tachycardia), and neuromuscular abnormalities (rigidity, clonus). It is a medical emergency."},
+{topic:"Psychiatric", q:"Which findings indicate neuroleptic malignant syndrome (NMS)? Select all that apply.",
+opts:["High fever","Muscle rigidity","Autonomic instability","Elevated creatine kinase (CK)","Hypotension with bradycardia"],correct:[0,1,2,3],
+r:"NMS presents with high fever, lead-pipe rigidity, autonomic instability (tachycardia, labile BP), and elevated CK. It is a life-threatening emergency requiring immediate discontinuation of antipsychotics."},
+{topic:"Psychiatric", q:"A client with bipolar disorder is in a manic phase. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Provide a structured, low-stimulation environment","Set firm, consistent limits on behavior","Encourage group therapy immediately","Monitor for exhaustion and dehydration","Administer mood stabilizers as ordered"],correct:[0,1,3,4],
+r:"For mania: provide structure and low stimulation, set firm limits, monitor for exhaustion/dehydration, and administer medications. Group therapy is overstimulating during acute mania and should be deferred."},
+{topic:"Psychiatric", q:"A client with bipolar disorder is started on valproic acid. Which laboratory tests require monitoring? Select all that apply.",
+opts:["Liver function tests","Serum valproic acid levels","Complete blood count","Serum amylase","Serum calcium"],correct:[0,1,2],
+r:"Valproic acid requires monitoring of LFTs (hepatotoxicity), serum levels (therapeutic 50–100 mcg/mL), and CBC (thrombocytopenia). Amylase and calcium are not routinely monitored."},
+{topic:"Psychiatric", q:"Which are risk factors for suicide? Select all that apply.",
+opts:["Previous suicide attempt","Family history of suicide","Substance abuse","Chronic illness","Strong social support"],correct:[0,1,2,3],
+r:"Suicide risk factors include previous attempts, family history, substance abuse, chronic illness, access to means, and social isolation. Strong social support is protective, not a risk factor."},
+{topic:"Psychiatric", q:"A client is admitted after a suicide attempt. Which nursing interventions are priorities? Select all that apply.",
+opts:["Remove harmful objects from the environment","Perform one-on-one observation if ordered","Assess for suicidal ideation regularly","Allow unsupervised bathroom visits","Develop a safety plan with the client"],correct:[0,1,2,4],
+r:"Post-suicide attempt care: remove harmful objects, provide close observation, assess ideation, and develop a safety plan. Unsupervised bathroom visits are not allowed for high-risk clients."},
+{topic:"Psychiatric", q:"A client with anorexia nervosa is admitted. Which findings are expected? Select all that apply.",
+opts:["Low body weight","Fear of gaining weight","Body image disturbance","Amenorrhea","Binge eating episodes"],correct:[0,1,2,3],
+r:"Anorexia nervosa is characterized by low body weight, intense fear of weight gain, body image disturbance, and amenorrhea. Binge eating is characteristic of bulimia nervosa."},
+{topic:"Psychiatric", q:"A client with bulimia nervosa is admitted. Which findings are expected? Select all that apply.",
+opts:["Normal or near-normal weight","Binge eating episodes","Self-induced vomiting","Dental enamel erosion","Significant weight loss"],correct:[0,1,2,3],
+r:"Bulimia nervosa often presents with normal weight, binge-purge episodes, and complications like dental erosion and electrolyte imbalances. Significant weight loss is more characteristic of anorexia nervosa."},
+{topic:"Psychiatric", q:"A client with anorexia nervosa is being refed. Which finding requires immediate intervention?",
+opts:["Weight gain of 0.5 kg per week","Refeeding syndrome with electrolyte imbalances","Increased appetite","Improved mood"],correct:1,
+r:"Refeeding syndrome can occur when nutrition is reintroduced too quickly, causing dangerous shifts in electrolytes (especially phosphate, potassium, magnesium) and cardiac complications. It requires immediate intervention."},
+{topic:"Psychiatric", q:"A nurse is caring for a client with alcohol withdrawal. Which findings indicate severe withdrawal (delirium tremens)? Select all that apply.",
+opts:["Hallucinations","Severe agitation","Autonomic instability","Tremors","Bradycardia"],correct:[0,1,2,3],
+r:"Delirium tremens presents with hallucinations, severe agitation, autonomic instability (tachycardia, hypertension, fever), and tremors. Tachycardia, not bradycardia, is expected."},
+{topic:"Psychiatric", q:"A client with alcohol use disorder is started on naltrexone. Which instructions should the nurse include? Select all that apply.",
+opts:["It reduces cravings for alcohol","It blocks the pleasurable effects of alcohol","It can cause nausea","It is safe in pregnancy","It may cause liver toxicity"],correct:[0,1,2,4],
+r:"Naltrexone reduces cravings and blocks alcohol's rewarding effects. Side effects include nausea and potential hepatotoxicity. It is not recommended in pregnancy (Category C)."},
+{topic:"Psychiatric", q:"A client with opioid use disorder is started on methadone. Which statements are correct? Select all that apply.",
+opts:["It is a long-acting opioid agonist","It reduces withdrawal symptoms","It can be dispensed daily at a clinic","It has no risk of dependence","It can cause respiratory depression in overdose"],correct:[0,1,2,4],
+r:"Methadone is a long-acting opioid agonist used for maintenance, reduces withdrawal/cravings, is dispensed daily, and can cause respiratory depression in overdose. It DOES carry a risk of dependence."},
+{topic:"Psychiatric", q:"Which findings indicate a client is experiencing withdrawal from benzodiazepines? Select all that apply.",
+opts:["Anxiety","Tremors","Insomnia","Seizures","Bradycardia"],correct:[0,1,2,3],
+r:"Benzodiazepine withdrawal presents with anxiety, tremors, insomnia, seizures, and autonomic hyperactivity (tachycardia, sweating). Bradycardia is not typical."},
+{topic:"Psychiatric", q:"A nurse is caring for a client with post-traumatic stress disorder (PTSD). Which findings are expected? Select all that apply.",
+opts:["Flashbacks","Hypervigilance","Avoidance of reminders","Emotional numbing","Increased trust in others"],correct:[0,1,2,3],
+r:"PTSD presents with flashbacks, hypervigilance, avoidance, emotional numbing, and difficulty trusting others. Increased trust is not characteristic."},
+{topic:"Psychiatric", q:"Which therapeutic communication techniques are appropriate for a client with PTSD? Select all that apply.",
+opts:["Use open-ended questions","Validate the client's feelings","Encourage detailed re-telling of the trauma immediately","Maintain a calm, predictable environment","Teach grounding techniques"],correct:[0,1,3,4],
+r:"For PTSD: use open-ended questions, validate feelings, maintain a calm environment, and teach grounding. Detailed re-telling should only occur when the client is ready and with professional guidance."},
+{topic:"Psychiatric", q:"A child is diagnosed with autism spectrum disorder. Which findings are expected? Select all that apply.",
+opts:["Impaired social interaction","Repetitive behaviors","Delayed language development","Strong eye contact","Insistence on sameness"],correct:[0,1,2,4],
+r:"Autism spectrum disorder presents with impaired social interaction, repetitive behaviors, delayed language, and insistence on sameness. Poor eye contact, not strong eye contact, is typical."},
+{topic:"Psychiatric", q:"A child with attention-deficit/hyperactivity disorder (ADHD) is started on methylphenidate. Which instructions should the nurse include? Select all that apply.",
+opts:["Administer in the morning to prevent insomnia","Monitor appetite and growth","Report increased heart rate","Administer at bedtime for best effect","Monitor for mood changes"],correct:[0,1,2,4],
+r:"Methylphenidate is given in the morning (can cause insomnia), requires monitoring of appetite/growth, heart rate, and mood. Bedtime dosing is avoided due to insomnia."},
+{topic:"Psychiatric", q:"A nurse is caring for a client with borderline personality disorder who is manipulating staff. Which interventions are appropriate? Select all that apply.",
+opts:["Maintain consistent limits","Use clear, direct communication","Rotate staff assignments frequently","Avoid arguing with the client","Document behavioral patterns"],correct:[0,1,3,4],
+r:"For borderline personality disorder: maintain consistent limits, use clear communication, avoid arguing, and document patterns. Consistent staff assignments (not frequent rotation) are preferred to build trust."},
+{topic:"Psychiatric", q:"A nurse is caring for a client with antisocial personality disorder. Which behaviors are expected? Select all that apply.",
+opts:["Manipulation of others","Lack of remorse","Impulsivity","Excessive empathy","Disregard for rules"],correct:[0,1,2,4],
+r:"Antisocial personality disorder is characterized by manipulation, lack of remorse, impulsivity, and disregard for rules. Empathy is typically lacking, not excessive."},
+{topic:"Psychiatric", q:"Which interventions are appropriate for a client experiencing a panic attack? Select all that apply.",
+opts:["Stay with the client","Speak in a calm, reassuring voice","Encourage the client to breathe slowly","Leave the client alone to regain control","Move the client to a quiet area"],correct:[0,1,2,4],
+r:"During a panic attack: stay with the client, speak calmly, encourage slow breathing, and reduce stimulation. Leaving the client alone increases fear and should be avoided."},
+{topic:"Psychiatric", q:"A client is prescribed alprazolam for anxiety. Which instructions should the nurse include? Select all that apply.",
+opts:["Avoid alcohol while taking this medication","Do not stop the medication abruptly","Take it only as prescribed","Drive carefully until you know the effects","Take with grapefruit juice for better absorption"],correct:[0,1,2,3],
+r:"Benzodiazepine teaching: avoid alcohol, do not stop abruptly (seizure risk), take only as prescribed, and use caution with driving. Grapefruit juice increases benzodiazepine levels and should be avoided."},
 
 // ---------- Abnormal Pediatric Nursing ----------
 {topic:"Abnormal Pediatrics", q:"A child with suspected epiglottitis is brought to the ED. Which nursing action is contraindicated?",
@@ -304,21 +805,78 @@ r:"Examining the throat or attempting to visualize the epiglottis directly can t
 {topic:"Abnormal Pediatrics", q:"An infant with suspected pyloric stenosis is expected to present with which classic symptom?",
 opts:["Bile-stained (greenish) vomiting","Projectile, non-bilious vomiting after feeding","Bloody, currant-jelly stools","Abdominal distention with absent bowel sounds"],correct:1,
 r:"Pyloric stenosis classically causes forceful, projectile vomiting of non-bilious (undigested milk) contents shortly after feeding, due to hypertrophy of the pyloric muscle obstructing gastric outflow."},
-{topic:"Abnormal Pediatrics", q:"A child with congenital heart disease presenting with cyanosis, clubbing, and a history of 'tet spells' most likely has:",
-opts:["Atrial septal defect","Patent ductus arteriosus","Tetralogy of Fallot","Coarctation of the aorta"],correct:2,
-r:"Tetralogy of Fallot (VSD, pulmonic stenosis, overriding aorta, RV hypertrophy) is a cyanotic defect classically associated with hypercyanotic 'tet spells' and clubbing from chronic hypoxemia."},
-{topic:"Abnormal Pediatrics", q:"Which is the priority nursing intervention for a child in status asthmaticus not responding to initial bronchodilator therapy?",
-opts:["Encourage oral fluids immediately","Prepare for possible escalation of respiratory support and notify the physician","Place the child in a supine position","Delay further intervention and reassess in 1 hour"],correct:1,
-r:"Status asthmaticus unresponsive to bronchodilators is a medical emergency; the nurse must promptly notify the physician and prepare for escalating interventions (e.g., IV steroids, possible intubation) as respiratory failure can develop quickly."},
-{topic:"Abnormal Pediatrics", q:"A child with nephrotic syndrome is expected to exhibit which classic triad of findings?",
-opts:["Hypertension, hematuria, oliguria","Massive proteinuria, hypoalbuminemia, generalized edema","Polyuria, glycosuria, weight loss","Fever, flank pain, dysuria"],correct:1,
-r:"Nephrotic syndrome's hallmark triad is massive proteinuria (leading to hypoalbuminemia) and resulting generalized edema, caused by increased glomerular permeability to protein."},
-{topic:"Abnormal Pediatrics", q:"A child is diagnosed with Kawasaki disease. Which finding is most concerning and requires cardiac monitoring?",
-opts:["Strawberry tongue","Desquamation of fingers and toes","Risk of coronary artery aneurysm","Bilateral non-purulent conjunctivitis"],correct:2,
-r:"While the rash, strawberry tongue, and desquamation are classic diagnostic signs, the most serious complication of Kawasaki disease is coronary artery aneurysm formation, requiring echocardiographic monitoring and timely IVIG treatment."}
-];
-
-BANK.push(
+{topic:"Abnormal Pediatrics", q:"A nurse is assessing a newborn with suspected tracheoesophageal fistula (TEF). Which findings are expected? Select all that apply.",
+opts:["Excessive oral secretions","Choking and cyanosis during feeding","Abdominal distention","Polyhydramnios during pregnancy","Increased appetite"],correct:[0,1,2,3],
+r:"TEF/EA presents with excessive secretions, choking/cyanosis with feeding, abdominal distention (from air entering the GI tract), and maternal polyhydramnios. Appetite is not increased; feeding problems are present."},
+{topic:"Abnormal Pediatrics", q:"A newborn with suspected esophageal atresia is admitted. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Maintain NPO status","Suction secretions as needed","Position with the head elevated","Administer oral feedings to test swallowing","Prepare for surgical repair"],correct:[0,1,2,4],
+r:"For esophageal atresia: keep NPO, suction secretions, elevate the head, and prepare for surgery. Oral feedings are contraindicated due to the risk of aspiration."},
+{topic:"Abnormal Pediatrics", q:"An infant with a myelomeningocele is admitted. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Cover the sac with sterile, moist saline dressing","Position the infant prone","Monitor for signs of infection","Apply direct pressure to the sac","Monitor for hydrocephalus"],correct:[0,1,2,4],
+r:"For myelomeningocele: cover with sterile moist dressing, position prone, monitor for infection and hydrocephalus. Direct pressure on the sac is contraindicated."},
+{topic:"Abnormal Pediatrics", q:"Which findings indicate hydrocephalus in an infant? Select all that apply.",
+opts:["Rapid head circumference growth","Bulging fontanel","Sunset eyes","Vomiting and irritability","Sunken fontanel"],correct:[0,1,2,3],
+r:"Hydrocephalus presents with rapid head growth, bulging fontanel, sunset eyes, vomiting, and irritability. A sunken fontanel suggests dehydration, not hydrocephalus."},
+{topic:"Abnormal Pediatrics", q:"An infant with a ventriculoperitoneal (VP) shunt is admitted. Which findings require immediate intervention? Select all that apply.",
+opts:["Headache and vomiting","Redness along the shunt tract","Sunsetting eyes","Improved feeding","Lethargy"],correct:[0,1,2,4],
+r:"VP shunt malfunction/infection presents with headache, vomiting, redness along the tract, sunset eyes, and lethargy. Improved feeding is not a sign of complication."},
+{topic:"Abnormal Pediatrics", q:"A child with cerebral palsy is at risk for contractures. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Perform passive range-of-motion exercises","Position with proper alignment","Encourage mobility as tolerated","Restrict all movement to prevent injury","Use orthotic devices as prescribed"],correct:[0,1,2,4],
+r:"For cerebral palsy: passive ROM, proper positioning, encouraging mobility, and orthotics help prevent contractures. Restricting movement worsens contractures and is contraindicated."},
+{topic:"Abnormal Pediatrics", q:"A child with cerebral palsy has difficulty swallowing. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Position upright during feeding","Provide small, frequent meals","Use thickened liquids as ordered","Feed quickly to prevent fatigue","Monitor for aspiration"],correct:[0,1,2,4],
+r:"For dysphagia in cerebral palsy: upright positioning, small frequent meals, thickened liquids, and aspiration monitoring. Feeding should be slow and unhurried, not rushed."},
+{topic:"Abnormal Pediatrics", q:"A child with spina bifida is at risk for latex allergy. Which items should be avoided? Select all that apply.",
+opts:["Latex gloves","Latex balloons","Rubber toys","Bananas","Silicone catheters"],correct:[0,1,2,3],
+r:"Children with spina bifida have a high risk of latex allergy. Latex gloves, balloons, rubber toys, and cross-reactive foods (bananas, avocados, kiwi) should be avoided. Silicone catheters are safe alternatives."},
+{topic:"Abnormal Pediatrics", q:"A child with Duchenne muscular dystrophy is admitted. Which findings are expected? Select all that apply.",
+opts:["Progressive muscle weakness","Gowers' sign","Calf muscle hypertrophy","Improved muscle strength over time","Frequent falls"],correct:[0,1,2,4],
+r:"Duchenne muscular dystrophy presents with progressive weakness, Gowers' sign (using hands to push up from the floor), pseudohypertrophy of the calves, and frequent falls. Strength does not improve over time."},
+{topic:"Abnormal Pediatrics", q:"A child with Duchenne muscular dystrophy is prescribed prednisone. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Monitor for signs of infection","Monitor blood glucose","Encourage a low-sodium diet","Administer live vaccines","Monitor for weight gain"],correct:[0,1,2,4],
+r:"Corticosteroid therapy requires monitoring for infection, glucose, and weight gain, plus a low-sodium diet. Live vaccines are contraindicated during immunosuppressive therapy."},
+{topic:"Abnormal Pediatrics", q:"A child with juvenile idiopathic arthritis (JIA) is admitted. Which findings are expected? Select all that apply.",
+opts:["Joint pain and swelling","Morning stiffness","Decreased range of motion","Increased appetite","Fever"],correct:[0,1,2,4],
+r:"JIA presents with joint pain/swelling, morning stiffness, decreased ROM, and fever. Appetite is typically decreased, not increased."},
+{topic:"Abnormal Pediatrics", q:"A child with juvenile idiopathic arthritis is prescribed NSAIDs. Which instructions should the nurse include? Select all that apply.",
+opts:["Take with food to reduce GI upset","Report black stools","Monitor for bleeding","Take on an empty stomach for best absorption","Attend regular follow-up appointments"],correct:[0,1,2,4],
+r:"NSAIDs should be taken with food, and clients should report black stools or bleeding. Taking on an empty stomach increases GI irritation and is not recommended."},
+{topic:"Abnormal Pediatrics", q:"A child with type 1 diabetes mellitus is admitted. Which findings indicate hypoglycemia? Select all that apply.",
+opts:["Shakiness","Sweating","Confusion","Polyuria","Tachycardia"],correct:[0,1,2,4],
+r:"Hypoglycemia presents with shakiness, sweating, confusion, tachycardia, and hunger. Polyuria is a sign of hyperglycemia, not hypoglycemia."},
+{topic:"Abnormal Pediatrics", q:"A child with type 1 diabetes is experiencing hypoglycemia and is conscious. What is the priority nursing action?",
+opts:["Administer insulin","Give 15 g of a fast-acting carbohydrate","Withhold all oral intake","Administer glucagon IM"],correct:1,
+r:"For conscious hypoglycemia, the rule of 15 applies: give 15 g of fast-acting carbohydrate, wait 15 minutes, recheck glucose, and repeat if needed. Insulin would worsen hypoglycemia."},
+{topic:"Abnormal Pediatrics", q:"A child with type 1 diabetes is unconscious due to hypoglycemia. What is the priority nursing action?",
+opts:["Give oral glucose gel","Administer glucagon IM or IV as ordered","Administer insulin","Place the child in a supine position and monitor"],correct:1,
+r:"For unconscious hypoglycemia, oral intake is contraindicated due to aspiration risk. Glucagon should be administered IM/IV/SC as ordered, followed by IV dextrose per protocol."},
+{topic:"Abnormal Pediatrics", q:"Which findings indicate diabetic ketoacidosis (DKA) in a child? Select all that apply.",
+opts:["Hyperglycemia","Ketonuria","Metabolic acidosis","Deep, rapid breathing (Kussmaul)","Bradycardia"],correct:[0,1,2,3],
+r:"DKA presents with hyperglycemia, ketonuria, metabolic acidosis, Kussmaul respirations, dehydration, and fruity breath. Tachycardia, not bradycardia, is typical."},
+{topic:"Abnormal Pediatrics", q:"A child with DKA is receiving IV fluids and insulin. Which findings indicate improvement? Select all that apply.",
+opts:["Decreasing blood glucose","Improving pH","Decreasing ketones","Increased urine output","Decreasing level of consciousness"],correct:[0,1,2,3],
+r:"DKA improvement: decreasing glucose, improving pH, decreasing ketones, and increasing urine output. A decreasing level of consciousness indicates worsening and requires immediate intervention."},
+{topic:"Abnormal Pediatrics", q:"A child with hypothyroidism is started on levothyroxine. Which instructions should the nurse include? Select all that apply.",
+opts:["Administer in the morning on an empty stomach","Do not mix with food or formula","Monitor for signs of hyperthyroidism","Administer at bedtime","Attend regular follow-up for growth monitoring"],correct:[0,1,2,4],
+r:"Levothyroxine should be given in the morning on an empty stomach, not with food/formula, with monitoring for hyperthyroidism signs and regular growth follow-up. Bedtime dosing is not recommended."},
+{topic:"Abnormal Pediatrics", q:"Which findings indicate congenital hypothyroidism in a newborn? Select all that apply.",
+opts:["Prolonged jaundice","Constipation","Poor feeding","Hoarse cry","Hyperactivity"],correct:[0,1,2,3],
+r:"Congenital hypothyroidism presents with prolonged jaundice, constipation, poor feeding, hoarse cry, and lethargy. Hyperactivity suggests hyperthyroidism, not hypothyroidism."},
+{topic:"Abnormal Pediatrics", q:"A child with phenylketonuria (PKU) is admitted. Which dietary restrictions are appropriate? Select all that apply.",
+opts:["Avoid high-protein foods","Avoid aspartame","Use special formula","Restrict phenylalanine intake","Encourage a high-protein diet"],correct:[0,1,2,3],
+r:"PKU management: avoid high-protein foods, aspartame (contains phenylalanine), use special formula, and restrict phenylalanine. A high-protein diet is contraindicated."},
+{topic:"Abnormal Pediatrics", q:"A child with galactosemia is admitted. Which dietary restrictions are appropriate? Select all that apply.",
+opts:["Avoid breast milk","Avoid cow's milk","Avoid soy formula","Use galactose-free formula","Encourage dairy products"],correct:[0,1,2,3],
+r:"Galactosemia requires avoidance of breast milk, cow's milk, and soy formula (which contains galactose), using galactose-free formula instead. Dairy products are contraindicated."},
+{topic:"Abnormal Pediatrics", q:"A child with hemophilia A is admitted with a bleeding episode. Which interventions are appropriate? Select all that apply.",
+opts:["Administer factor VIII as ordered","Apply ice to the affected area","Elevate the affected extremity","Administer aspirin for pain","Monitor for signs of internal bleeding"],correct:[0,1,2,4],
+r:"For hemophilia A bleeding: factor VIII replacement, ice, elevation, and bleeding monitoring. Aspirin is contraindicated because it impairs platelet function and worsens bleeding."},
+{topic:"Abnormal Pediatrics", q:"Which findings indicate von Willebrand disease? Select all that apply.",
+opts:["Easy bruising","Prolonged bleeding time","Epistaxis","Normal platelet count","Thrombocytopenia"],correct:[0,1,2,3],
+r:"Von Willebrand disease presents with easy bruising, prolonged bleeding time, epistaxis, and a normal platelet count. Thrombocytopenia is not characteristic."},
+{topic:"Abnormal Pediatrics", q:"A child with leukemia is admitted. Which findings are expected? Select all that apply.",
+opts:["Pallor and fatigue","Frequent infections","Bruising and petechiae","Bone pain","Polycythemia"],correct:[0,1,2,3],
+r:"Leukemia presents with pallor/fatigue (anemia), frequent infections (neutropenia), bruising/petechiae (thrombocytopenia), and bone pain. Polycythemia is not characteristic."},
 {topic:"Abnormal Pediatrics", q:"A nurse assesses a newborn for developmental dysplasia of the hip. Which finding, elicited via the Ortolani maneuver, suggests hip instability?",
 opts:["A soft clicking sound only","A palpable 'clunk' as the femoral head reduces into the acetabulum","Symmetric hip abduction bilaterally","Absence of thigh skin folds"],correct:1,
 r:"A palpable 'clunk' during the Ortolani maneuver indicates the dislocated femoral head is being reduced back into the acetabulum, suggesting developmental dysplasia of the hip."},
@@ -348,8 +906,52 @@ opts:["Epiglottitis","Croup (laryngotracheobronchitis)","Bronchiolitis","Pertuss
 r:"Croup classically causes a barking, seal-like cough with inspiratory stridor and hoarseness, often worse at night, and is commonly viral in origin (parainfluenza), distinguishing it from the more sudden, toxic presentation of epiglottitis."},
 {topic:"Abnormal Pediatrics", q:"An infant is diagnosed with RSV bronchiolitis. Which nursing intervention is most appropriate?",
 opts:["Administer routine antibiotics for all cases","Provide supportive care: suctioning, humidified oxygen, and adequate hydration","Encourage large-volume oral feeds regardless of respiratory distress","Withhold oxygen unless the infant is unconscious"],correct:1,
-r:"RSV bronchiolitis is viral, so treatment is primarily supportive — nasal suctioning, humidified oxygen as needed, and maintaining hydration — rather than antibiotics, which do not treat viral infections."}
-);
+r:"RSV bronchiolitis is viral, so treatment is primarily supportive — nasal suctioning, humidified oxygen as needed, and maintaining hydration — rather than antibiotics, which do not treat viral infections."},
+{topic:"Abnormal Pediatrics", q:"A child with leukemia is receiving chemotherapy. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Monitor for signs of infection","Encourage oral hygiene","Administer antiemetics as ordered","Use live vaccines as scheduled","Monitor for bleeding"],correct:[0,1,2,4],
+r:"During chemotherapy: monitor for infection/bleeding, encourage oral hygiene, and administer antiemetics. Live vaccines are contraindicated due to immunosuppression."},
+{topic:"Abnormal Pediatrics", q:"A child with Wilms tumor is admitted. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Avoid palpating the abdomen","Monitor blood pressure","Prepare for surgical removal","Encourage vigorous activity","Monitor for hematuria"],correct:[0,1,2,4],
+r:"For Wilms tumor: avoid abdominal palpation (risk of rupture), monitor BP, prepare for surgery, and monitor for hematuria. Vigorous activity should be limited to prevent tumor rupture."},
+{topic:"Abnormal Pediatrics", q:"A child with neuroblastoma is admitted. Which findings are expected? Select all that apply.",
+opts:["Abdominal mass","Periorbital ecchymosis","Bone pain","Hypertension","Polycythemia"],correct:[0,1,2,3],
+r:"Neuroblastoma presents with an abdominal mass, periorbital ecchymosis (raccoon eyes), bone pain, and hypertension. Polycythemia is not typical."},
+{topic:"Abnormal Pediatrics", q:"A child with retinoblastoma is admitted. Which findings are expected? Select all that apply.",
+opts:["Leukocoria (white pupillary reflex)","Strabismus","Red, painful eye","Decreased vision","Protruding eyeball"],correct:[0,1,3,4],
+r:"Retinoblastoma presents with leukocoria, strabismus, decreased vision, and proptosis. A red, painful eye suggests infection or glaucoma, not typically retinoblastoma."},
+{topic:"Abnormal Pediatrics", q:"A child with acute lymphoblastic leukemia (ALL) is receiving methotrexate. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Monitor for mucositis","Encourage oral hygiene with soft toothbrush","Administer leucovorin as ordered","Monitor liver function tests","Encourage live vaccines"],correct:[0,1,2,3],
+r:"Methotrexate requires monitoring for mucositis, oral hygiene, leucovorin rescue, and LFT monitoring. Live vaccines are contraindicated during chemotherapy."},
+{topic:"Abnormal Pediatrics", q:"A child is diagnosed with idiopathic thrombocytopenic purpura (ITP). Which findings are expected? Select all that apply.",
+opts:["Petechiae","Ecchymosis","Epistaxis","Normal platelet count","Prolonged bleeding time"],correct:[0,1,2,4],
+r:"ITP presents with petechiae, ecchymosis, epistaxis, and prolonged bleeding time. Platelet count is decreased (thrombocytopenia), not normal."},
+{topic:"Abnormal Pediatrics", q:"A child with ITP is admitted. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Avoid IM injections","Use a soft toothbrush","Monitor for signs of bleeding","Administer aspirin for fever","Avoid contact sports"],correct:[0,1,2,4],
+r:"For ITP: avoid IM injections, use a soft toothbrush, monitor for bleeding, and avoid contact sports. Aspirin is contraindicated because it impairs platelet function."},
+{topic:"Abnormal Pediatrics", q:"A child with severe combined immunodeficiency (SCID) is admitted. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Maintain protective isolation","Use strict hand hygiene","Administer live vaccines","Monitor for signs of infection","Avoid crowds"],correct:[0,1,3,4],
+r:"For SCID: protective isolation, strict hand hygiene, infection monitoring, and avoiding crowds. Live vaccines are contraindicated due to the lack of immune response."},
+{topic:"Abnormal Pediatrics", q:"A child with HIV is admitted. Which findings indicate progression to AIDS? Select all that apply.",
+opts:["Recurrent infections","Failure to thrive","Lymphadenopathy","Opportunistic infections","Increased CD4 count"],correct:[0,1,2,3],
+r:"AIDS progression in children: recurrent infections, failure to thrive, lymphadenopathy, and opportunistic infections. CD4 count decreases, not increases."},
+{topic:"Abnormal Pediatrics", q:"A child with HIV is receiving antiretroviral therapy. Which nursing interventions are appropriate? Select all that apply.",
+opts:["Administer medications at consistent times","Monitor for side effects","Encourage adherence","Administer live vaccines","Monitor growth and development"],correct:[0,1,2,4],
+r:"For pediatric HIV: consistent medication timing, side effect monitoring, adherence support, and growth monitoring. Live vaccines are contraindicated due to immunosuppression."},
+{topic:"Abnormal Pediatrics", q:"A child with congenital heart disease presenting with cyanosis, clubbing, and a history of 'tet spells' most likely has:",
+opts:["Atrial septal defect","Patent ductus arteriosus","Tetralogy of Fallot","Coarctation of the aorta"],correct:2,
+r:"Tetralogy of Fallot (VSD, pulmonic stenosis, overriding aorta, RV hypertrophy) is a cyanotic defect classically associated with hypercyanotic 'tet spells' and clubbing from chronic hypoxemia."},
+{topic:"Abnormal Pediatrics", q:"Which is the priority nursing intervention for a child in status asthmaticus not responding to initial bronchodilator therapy?",
+opts:["Encourage oral fluids immediately","Prepare for possible escalation of respiratory support and notify the physician","Place the child in a supine position","Delay further intervention and reassess in 1 hour"],correct:1,
+r:"Status asthmaticus unresponsive to bronchodilators is a medical emergency; the nurse must promptly notify the physician and prepare for escalating interventions (e.g., IV steroids, possible intubation) as respiratory failure can develop quickly."},
+{topic:"Abnormal Pediatrics", q:"A child with nephrotic syndrome is expected to exhibit which classic triad of findings?",
+opts:["Hypertension, hematuria, oliguria","Massive proteinuria, hypoalbuminemia, generalized edema","Polyuria, glycosuria, weight loss","Fever, flank pain, dysuria"],correct:1,
+r:"Nephrotic syndrome's hallmark triad is massive proteinuria (leading to hypoalbuminemia) and resulting generalized edema, caused by increased glomerular permeability to protein."},
+{topic:"Abnormal Pediatrics", q:"A child is diagnosed with Kawasaki disease. Which finding is most concerning and requires cardiac monitoring?",
+opts:["Strawberry tongue","Desquamation of fingers and toes","Risk of coronary artery aneurysm","Bilateral non-purulent conjunctivitis"],correct:2,
+r:"While the rash, strawberry tongue, and desquamation are classic diagnostic signs, the most serious complication of Kawasaki disease is coronary artery aneurysm formation, requiring echocardiographic monitoring and timely IVIG treatment."}
+];
+
+
 
 const topics = [...new Set(BANK.map(q=>q.topic))];
 const topicListEl = document.getElementById('topicList');
@@ -374,37 +976,105 @@ document.addEventListener('change', e=>{ if(e.target.classList.contains('topicCh
 updateMax();
 
 let quizQs = [], current = 0, score = 0;
+let mode = 'practice';
+let timerId = null, timeLeft = 0, elapsed = 0;
+let answers = []; // {q, chosen, correct}
 
 document.getElementById('startBtn').onclick = ()=>{
   const sel = selectedTopics();
   if(sel.length===0){ alert('Pick at least one topic.'); return; }
+  const modeInput = document.querySelector('input[name="mode"]:checked');
+  mode = modeInput ? modeInput.value : 'practice';
   const pool = BANK.filter(q=>sel.includes(q.topic));
   let n = parseInt(document.getElementById('itemCount').value) || 10;
   n = Math.min(n, pool.length);
   quizQs = [...pool].sort(()=>Math.random()-0.5).slice(0,n);
-  current = 0; score = 0;
+  current = 0; score = 0; answers = [];
   document.getElementById('setup').classList.add('hidden');
   document.getElementById('quiz').classList.remove('hidden');
+  document.getElementById('timer').classList.toggle('hidden', mode!=='timed');
+  if(mode==='timed'){ timeLeft = quizQs.length*60; elapsed = 0; startTimer(); }
+  else { startElapsed(); }
   showQuestion();
 };
+
+function startTimer(){
+  clearInterval(timerId);
+  updateTimerDisplay();
+  timerId = setInterval(()=>{
+    timeLeft--;
+    updateTimerDisplay();
+    if(timeLeft<=0){ clearInterval(timerId); finishExam(true); }
+  },1000);
+}
+function startElapsed(){
+  clearInterval(timerId); elapsed = 0;
+  document.getElementById('timer').textContent = '⏱ 00:00';
+  timerId = setInterval(()=>{ elapsed++; updateTimerDisplay(); },1000);
+}
+function updateTimerDisplay(){
+  const el = document.getElementById('timer');
+  const t = mode==='timed' ? timeLeft : elapsed;
+  const m = String(Math.floor(t/60)).padStart(2,'0');
+  const s = String(t%60).padStart(2,'0');
+  el.textContent = '⏱ ' + m + ':' + s;
+  el.classList.toggle('warn', mode==='timed' && timeLeft<=30);
+}
 
 function showQuestion(){
   const q = quizQs[current];
   document.getElementById('progress').textContent = `Question ${current+1} of ${quizQs.length}`;
   document.getElementById('qTopic').textContent = q.topic;
-  document.getElementById('qText').textContent = q.q;
+  const isSATA = Array.isArray(q.correct);
+  document.getElementById('qText').textContent = q.q + (isSATA ? " (Select all that apply)" : "");
   const optDiv = document.getElementById('options');
   optDiv.innerHTML='';
   const rat = document.getElementById('rationale');
   rat.style.display='none';
   document.getElementById('nextBtn').classList.add('hidden');
-  q.opts.forEach((opt,i)=>{
-    const btn = document.createElement('button');
-    btn.className='opt';
-    btn.textContent = opt;
-    btn.onclick = ()=> selectAnswer(i);
-    optDiv.appendChild(btn);
-  });
+
+  if(isSATA){
+    q.opts.forEach((opt,i)=>{
+      const btn = document.createElement('button');
+      btn.className='opt';
+      btn.textContent = opt;
+      btn.dataset.idx = i;
+      btn.onclick = ()=> btn.classList.toggle('selected');
+      optDiv.appendChild(btn);
+    });
+    const submit = document.createElement('button');
+    submit.className='btn-primary';
+    submit.textContent='Submit Answer';
+    submit.onclick = ()=>{
+      const chosen = [...optDiv.querySelectorAll('.opt.selected')].map(b=>parseInt(b.dataset.idx));
+      gradeSATA(chosen, q);
+      submit.remove();
+    };
+    optDiv.appendChild(submit);
+  } else {
+    q.opts.forEach((opt,i)=>{
+      const btn = document.createElement('button');
+      btn.className='opt';
+      btn.textContent = opt;
+      btn.onclick = ()=> selectAnswer(i);
+      optDiv.appendChild(btn);
+    });
+  }
+}
+
+function gradeSATA(chosen, q){
+  const btns = document.querySelectorAll('.opt');
+  btns.forEach(b=>b.disabled=true);
+  const correctArr = q.correct;
+  const isCorrect = chosen.length === correctArr.length && chosen.every(c=>correctArr.includes(c));
+  correctArr.forEach(i=> btns[i].classList.add('correct'));
+  chosen.forEach(i=>{ if(!correctArr.includes(i)) btns[i].classList.add('wrong'); });
+  if(isCorrect) score++;
+  answers.push({q, chosen, correct:isCorrect});
+  const rat = document.getElementById('rationale');
+  rat.textContent = 'Rationale: ' + q.r;
+  rat.style.display='block';
+  document.getElementById('nextBtn').classList.remove('hidden');
 }
 
 function selectAnswer(i){
@@ -412,7 +1082,9 @@ function selectAnswer(i){
   const btns = document.querySelectorAll('.opt');
   btns.forEach(b=>b.disabled=true);
   btns[q.correct].classList.add('correct');
-  if(i!==q.correct){ btns[i].classList.add('wrong'); } else { score++; }
+  const isCorrect = i===q.correct;
+  if(!isCorrect){ btns[i].classList.add('wrong'); } else { score++; }
+  answers.push({q, chosen:i, correct:isCorrect});
   const rat = document.getElementById('rationale');
   rat.textContent = 'Rationale: ' + q.r;
   rat.style.display='block';
@@ -422,22 +1094,126 @@ function selectAnswer(i){
 document.getElementById('nextBtn').onclick = ()=>{
   current++;
   if(current < quizQs.length){ showQuestion(); }
-  else { showResults(); }
+  else { finishExam(false); }
 };
 
-function showResults(){
+function finishExam(timedOut){
+  clearInterval(timerId);
   document.getElementById('quiz').classList.add('hidden');
   document.getElementById('results').classList.remove('hidden');
-  const pct = Math.round((score/quizQs.length)*100);
-  document.getElementById('scoreText').textContent = `${score} / ${quizQs.length}`;
+  const total = quizQs.length;
+  const pct = total ? Math.round((score/total)*100) : 0;
+  document.getElementById('scoreText').textContent = timedOut ? `⏱ Time's up — ${score} / ${total}` : `${score} / ${total}`;
   document.getElementById('scoreDetail').textContent = `${pct}% correct`;
+
+  // Per-topic breakdown
+  const byTopic = {};
+  answers.forEach(a=>{
+    const t = a.q.topic;
+    if(!byTopic[t]) byTopic[t] = {correct:0, total:0};
+    byTopic[t].total++;
+    if(a.correct) byTopic[t].correct++;
+  });
+  const breakdown = document.getElementById('topicBreakdown');
+  breakdown.innerHTML = '';
+  Object.keys(byTopic).sort().forEach(t=>{
+    const {correct, total} = byTopic[t];
+    const p = Math.round((correct/total)*100);
+    const row = document.createElement('div');
+    row.className = 'topic-row';
+    row.innerHTML = `<div style="flex:1;">
+        <div>${t} — ${correct}/${total} (${p}%)</div>
+        <div class="topic-bar"><div style="width:${p}%;"></div></div>
+      </div>`;
+    breakdown.appendChild(row);
+  });
+
+  // Review card
+  const missed = answers.filter(a=>!a.correct);
+  const reviewCard = document.getElementById('reviewCard');
+  const reviewList = document.getElementById('reviewList');
+  reviewList.innerHTML = '';
+  if(missed.length === 0){
+    reviewCard.classList.add('hidden');
+    document.getElementById('reviewBtn').classList.add('hidden');
+  } else {
+    reviewCard.classList.remove('hidden');
+    document.getElementById('reviewBtn').classList.remove('hidden');
+    missed.forEach(a=>{
+      const item = document.createElement('div');
+      item.className = 'review-item';
+      const correctText = Array.isArray(a.q.correct)
+        ? a.q.correct.map(i=>a.q.opts[i]).join('; ')
+        : a.q.opts[a.q.correct];
+      const yoursText = Array.isArray(a.chosen)
+        ? (a.chosen.length ? a.chosen.map(i=>a.q.opts[i]).join('; ') : '(no answer)')
+        : a.q.opts[a.chosen];
+      item.innerHTML = `<div class="q">${a.q.q}</div>
+        <div class="yours">Your answer: ${yoursText}</div>
+        <div class="ans">Correct: ${correctText}</div>
+        <div class="rat">${a.q.r}</div>`;
+      reviewList.appendChild(item);
+    });
+  }
+
+  // Save to localStorage for progress history
+  saveHistory({
+    date: Date.now(),
+    mode,
+    score, total,
+    byTopic
+  });
 }
 
+document.getElementById('reviewBtn').onclick = ()=>{
+  const c = document.getElementById('reviewCard');
+  c.classList.toggle('hidden');
+  document.getElementById('reviewBtn').textContent =
+    c.classList.contains('hidden') ? 'Review Missed Questions' : 'Hide Review';
+};
+
 document.getElementById('restartBtn').onclick = ()=>{
+  clearInterval(timerId);
   document.getElementById('results').classList.add('hidden');
   document.getElementById('setup').classList.remove('hidden');
   updateMax();
 };
+
+/* ---- Progress history (localStorage) ---- */
+const HISTORY_KEY = 'nle_history_v1';
+function saveHistory(entry){
+  try{
+    const hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    hist.push(entry);
+    // keep last 50 attempts
+    while(hist.length > 50) hist.shift();
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+    renderHistory();
+  }catch(e){ console.warn('history save failed', e); }
+}
+function getHistory(){
+  try{ return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function renderHistory(){
+  const hist = getHistory();
+  const wrap = document.getElementById('historyCard');
+  const list = document.getElementById('historyList');
+  if(!wrap) return;
+  if(hist.length === 0){ wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  list.innerHTML = '';
+  hist.slice().reverse().slice(0,10).forEach(h=>{
+    const d = new Date(h.date);
+    const row = document.createElement('div');
+    row.className = 'topic-row';
+    row.innerHTML = `<span>${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · ${h.mode}</span>
+      <strong>${h.score}/${h.total}</strong>`;
+    list.appendChild(row);
+  });
+
+}
+renderHistory();
 </script>
 <script>
 if ("serviceWorker" in navigator) {
@@ -445,6 +1221,7 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(console.error);
   });
 }
+
 </script>
 
 </body>

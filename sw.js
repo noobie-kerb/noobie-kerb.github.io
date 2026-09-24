@@ -1,4 +1,4 @@
-const CACHE_NAME = "nle-review-v1";
+const CACHE_NAME = "nle-review-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
