@@ -1,0 +1,22 @@
+{
+  "name": "NLE Review Quiz",
+  "short_name": "NLE Review",
+  "description": "Nursing Licensure Examination practice quiz.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f7f5f2",
+  "theme_color": "#2f6f4f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

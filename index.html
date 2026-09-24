@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f6f4f">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>NLE Review Quiz</title>
+<style>
+:root{
+  --bg:#f7f5f2; --card:#ffffff; --ink:#1f2430; --sub:#6b7280;
+  --accent:#2f6f4f; --accent2:#c96a3a; --bad:#c0392b; --good:#2f6f4f;
+  --border:#e5e1da;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171c; --card:#1e2128; --ink:#eceef1; --sub:#9aa1ac; --border:#2c303a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171c; --card:#1e2128; --ink:#eceef1; --sub:#9aa1ac; --border:#2c303a;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 40px;}
+h1{font-size:1.4rem;margin:8px 0 2px;}
+.sub{color:var(--sub);font-size:.9rem;margin-bottom:20px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;}
+.topic{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--border);}
+.topic:last-child{border-bottom:none;}
+.topic label{font-size:.98rem;}
+.count-row{display:flex;align-items:center;gap:12px;margin-top:6px;}
+input[type=number]{width:80px;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--ink);font-size:1rem;}
+button{border:none;border-radius:12px;padding:13px 18px;font-size:1rem;font-weight:600;cursor:pointer;}
+.btn-primary{background:var(--accent);color:#fff;width:100%;margin-top:16px;}
+.btn-secondary{background:transparent;color:var(--accent);border:1px solid var(--accent);width:100%;margin-top:10px;}
+.tag{display:inline-block;font-size:.72rem;color:var(--accent);background:rgba(47,111,79,.12);padding:3px 9px;border-radius:99px;margin-bottom:10px;}
+.qtext{font-size:1.05rem;line-height:1.5;margin-bottom:16px;}
+.opt{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:9px;font-size:.96rem;color:var(--ink);}
+.opt.correct{border-color:var(--good);background:rgba(47,111,79,.12);}
+.opt.wrong{border-color:var(--bad);background:rgba(192,57,38,.12);}
+.opt:disabled{opacity:.85;}
+.rationale{margin-top:14px;padding:12px 14px;background:var(--bg);border-radius:12px;border:1px solid var(--border);font-size:.9rem;line-height:1.5;color:var(--sub);display:none;}
+.progress{font-size:.82rem;color:var(--sub);margin-bottom:8px;}
+.hidden{display:none;}
+.score{font-size:2.2rem;font-weight:700;color:var(--accent);margin:6px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="setup">
+  <h1>🩺 NLE Review</h1>
+  <div class="sub">Original practice questions with rationales — pick your topics.</div>
+  <div class="card" id="topicList"></div>
+  <div class="card">
+    <label style="font-weight:600;">Number of items</label>
+    <div class="count-row">
+      <input type="number" id="itemCount" min="1" value="10">
+      <span class="sub" id="maxAvail"></span>
+    </div>
+  </div>
+  <button class="btn-primary" id="startBtn">Start Exam</button>
+</div>
+
+<div id="quiz" class="hidden">
+  <div class="progress" id="progress"></div>
+  <div class="card">
+    <span class="tag" id="qTopic"></span>
+    <div class="qtext" id="qText"></div>
+    <div id="options"></div>
+    <div class="rationale" id="rationale"></div>
+  </div>
+  <button class="btn-primary hidden" id="nextBtn">Next Question</button>
+</div>
+
+<div id="results" class="hidden">
+  <div class="card" style="text-align:center;">
+    <div class="sub">Your score</div>
+    <div class="score" id="scoreText"></div>
+    <div class="sub" id="scoreDetail"></div>
+  </div>
+  <button class="btn-primary" id="restartBtn">New Exam</button>
+</div>
+
+</div>
+
+<script>
+const BANK = [
+// ---------- Normal Obstetrics Nursing ----------
+{topic:"Obstetrics", q:"A client at 32 weeks AOG reports occasional painless, dark red vaginal bleeding. What condition should the nurse suspect first?",
+opts:["Placenta previa","Abruptio placentae","Ectopic pregnancy","Preterm labor"],correct:0,
+r:"Painless, bright-to-dark red bleeding in the 3rd trimester is the classic sign of placenta previa. Abruptio placentae typically presents with painful bleeding and a rigid, tender uterus."},
+{topic:"Obstetrics", q:"Which finding in a postpartum client 2 hours after delivery requires immediate nursing action?",
+opts:["Fundus firm, at the level of the umbilicus","Lochia rubra, moderate amount","Boggy fundus displaced to the right of midline","Mild afterpains"],correct:2,
+r:"A boggy, displaced fundus suggests a full bladder or uterine atony, both of which increase the risk of postpartum hemorrhage. The nurse should have the client void and reassess, then massage the fundus if it remains boggy."},
+{topic:"Obstetrics", q:"A pregnant client's blood pressure is 150/96 mmHg with 2+ proteinuria at 34 weeks, with no other symptoms. This is classified as:",
+opts:["Chronic hypertension","Gestational hypertension","Preeclampsia without severe features","Eclampsia"],correct:2,
+r:"New-onset hypertension (≥140/90) plus proteinuria after 20 weeks, without severe features like visual changes, epigastric pain, or very high BP, is classified as preeclampsia without severe features."},
+{topic:"Obstetrics", q:"During the second stage of labor, which maternal behavior is expected?",
+opts:["Increased urge to push with contractions","Complete loss of contraction sensation","Sudden decrease in contraction frequency","Rupture of membranes is required to begin this stage"],correct:0,
+r:"The second stage (full dilation to delivery) is marked by an involuntary urge to bear down with each contraction as the fetal head descends and puts pressure on the rectum."},
+{topic:"Obstetrics", q:"A nurse is teaching a client about the expected changes in lochia after delivery. Which sequence is correct?",
+opts:["Alba → Serosa → Rubra","Rubra → Serosa → Alba","Serosa → Rubra → Alba","Alba → Rubra → Serosa"],correct:1,
+r:"Lochia progresses from rubra (red, days 1–3) to serosa (pinkish-brown, days 4–10) to alba (yellowish-white, days 10–14 up to 6 weeks) as the endometrium heals."},
+{topic:"Obstetrics", q:"Which client is at highest risk for developing gestational diabetes mellitus?",
+opts:["22 years old, BMI 21, first pregnancy","35 years old, BMI 32, previous macrosomic baby","28 years old, BMI 23, twin pregnancy diagnosed at 30 weeks","30 years old, BMI 24, no prior pregnancies"],correct:1,
+r:"Advanced maternal age, obesity (BMI ≥30), and a history of delivering a macrosomic infant (>4kg) are major risk factors for gestational diabetes."},
+
+{topic:"Obstetrics", q:"A client's LMP was June 10. Using Naegele's rule, what is the estimated date of delivery?",
+opts:["March 3 (next year)","March 17 (next year)","April 10 (next year)","February 17 (next year)"],correct:1,
+r:"Naegele's rule: subtract 3 months, add 7 days, adjust the year. June 10 − 3 months = March 10; +7 days = March 17."},
+{topic:"Obstetrics", q:"What is the primary purpose of performing Leopold's maneuvers?",
+opts:["To assess fetal heart tones only","To determine fetal lie, presentation, position, and estimated size","To measure cervical dilation","To assess amniotic fluid volume"],correct:1,
+r:"Leopold's maneuvers are a systematic abdominal palpation technique used to identify fetal lie, presentation, position, and approximate size before determining where to auscultate fetal heart tones."},
+{topic:"Obstetrics", q:"Which finding differentiates true labor from false (Braxton Hicks) contractions?",
+opts:["Contractions felt in the abdomen only","Contractions that decrease with walking or position change","Progressive cervical dilation and effacement with contractions","Irregular contraction intervals that do not intensify"],correct:2,
+r:"True labor contractions cause progressive cervical change (dilation and effacement) and intensify with time and activity, unlike false labor, which is irregular and often eases with walking or rest."},
+{topic:"Obstetrics", q:"An Rh-negative mother delivers an Rh-positive infant. When should Rho(D) immune globulin (RhoGAM) be administered postpartum?",
+opts:["Within 72 hours after delivery","Within 2 weeks after delivery","Only if a second pregnancy is planned","Immediately before delivery"],correct:0,
+r:"RhoGAM should be given within 72 hours postpartum (and also during pregnancy at ~28 weeks) to prevent maternal sensitization from fetal Rh-positive blood exposure, protecting future pregnancies."},
+{topic:"Obstetrics", q:"Which parameter is NOT part of the APGAR scoring system?",
+opts:["Heart rate","Respiratory effort","Muscle tone","Birth weight"],correct:3,
+r:"APGAR assesses Appearance (color), Pulse (heart rate), Grimace (reflex irritability), Activity (muscle tone), and Respiration — birth weight is not part of the scoring system."},
+{topic:"Obstetrics", q:"Which hormone is primarily responsible for the milk let-down (ejection) reflex during breastfeeding?",
+opts:["Prolactin","Oxytocin","Estrogen","Progesterone"],correct:1,
+r:"Oxytocin causes contraction of myoepithelial cells around the alveoli, triggering milk ejection. Prolactin, in contrast, stimulates milk production/synthesis."},
+{topic:"Obstetrics", q:"A primigravida asks the nurse what 'lightening' means. The best response is:",
+opts:["The fetus has stopped moving as often","The fetal head has descended into the pelvic inlet","Labor contractions have become painless","The amniotic sac has ruptured"],correct:1,
+r:"Lightening refers to the fetal presenting part (usually the head) descending into the pelvic inlet, often occurring 2–4 weeks before labor in primigravidas, relieving pressure on the diaphragm."},
+{topic:"Obstetrics", q:"A nurse is teaching perineal care to a postpartum client with an episiotomy. Which instruction is correct?",
+opts:["Wipe from back to front after voiding","Use a peri-bottle with warm water, spraying front to back","Apply ice packs continuously for the first week","Avoid changing perineal pads more than twice a day"],correct:1,
+r:"Peri-bottle irrigation from front to back after voiding/defecating cleanses the perineum without introducing rectal flora to the episiotomy site, reducing infection risk."},
+{topic:"Obstetrics", q:"On postpartum day 1, the nurse palpates the fundus at the level of the umbilicus. By postpartum day 3, where should the fundus be located?",
+opts:["Still at the umbilicus","2 fingerbreadths above the umbilicus","About 3 fingerbreadths below the umbilicus","No longer palpable"],correct:2,
+r:"The fundus descends about 1 fingerbreadth (1 cm) per day after delivery, so by day 3 it should be roughly 3 fingerbreadths below the umbilicus as involution progresses."},
+{topic:"Obstetrics", q:"Which symptom reported by a pregnant client in the third trimester is a danger sign requiring immediate follow-up?",
+opts:["Mild ankle edema at end of day","Occasional Braxton Hicks contractions","Severe headache with blurred vision","Increased urinary frequency"],correct:2,
+r:"Severe headache with visual disturbances can indicate worsening preeclampsia progressing toward eclampsia, and requires immediate evaluation of blood pressure and neurologic status."},
+
+// ---------- Normal Pediatrics Nursing ----------
+{topic:"Pediatrics", q:"At what age does a healthy infant typically achieve head control while in a prone position?",
+opts:["1 month","3–4 months","6 months","9 months"],correct:1,
+r:"By 3–4 months, most infants can lift and hold their head steady when prone and briefly when pulled to sit, reflecting maturing neck extensor strength."},
+{topic:"Pediatrics", q:"According to Erikson's psychosocial stages, a toddler (1–3 years) is primarily working through which developmental task?",
+opts:["Trust vs. mistrust","Autonomy vs. shame and doubt","Initiative vs. guilt","Industry vs. inferiority"],correct:1,
+r:"Toddlers develop autonomy through self-feeding, toileting, and asserting independence ('me do it'); overly restrictive caregiving can foster shame or doubt instead."},
+{topic:"Pediatrics", q:"A nurse is teaching a mother about introducing solid foods to her 6-month-old. Which food should be avoided due to botulism risk?",
+opts:["Mashed banana","Rice cereal","Honey","Pureed carrots"],correct:2,
+r:"Honey may contain Clostridium botulinum spores that an infant's immature GI tract cannot destroy, risking infant botulism. It should be avoided until age 1."},
+{topic:"Pediatrics", q:"Which immunization is routinely given at birth according to the Philippine Expanded Program on Immunization?",
+opts:["MMR","BCG and Hepatitis B","OPV","Pentavalent vaccine"],correct:1,
+r:"Under the Philippine EPI, BCG (against TB) and the first dose of Hepatitis B vaccine are given at birth, ideally within 24 hours."},
+{topic:"Pediatrics", q:"A 4-year-old is admitted for a minor procedure. Which approach best supports the child's developmental needs (Erikson: initiative vs. guilt)?",
+opts:["Allow the child to help set up simple, safe equipment","Complete all procedures quickly without explanation to reduce fear","Keep the child in bed at all times for safety","Discourage questions to avoid overstimulation"],correct:0,
+r:"Preschoolers are developing initiative; giving them safe, simple choices and roles (like helping) supports this task and reduces feelings of guilt or helplessness."},
+{topic:"Pediatrics", q:"Which is an expected physiologic finding in a healthy newborn within the first 24 hours?",
+opts:["Respiratory rate of 20/min","Acrocyanosis of hands and feet","Bilateral red reflex absent","Continuous high-pitched crying"],correct:1,
+r:"Acrocyanosis (bluish hands and feet with pink central body) is a normal newborn finding due to immature peripheral circulation and usually resolves within 24–48 hours."},
+
+{topic:"Pediatrics", q:"According to Piaget, at approximately what age does an infant develop object permanence?",
+opts:["1–2 months","4–5 months","8–9 months","18–24 months"],correct:2,
+r:"Object permanence — understanding that objects continue to exist even when out of sight — typically develops around 8–9 months, within Piaget's sensorimotor stage."},
+{topic:"Pediatrics", q:"Separation anxiety in infants typically peaks at what age?",
+opts:["2–3 months","6–8 months","12–24 months","3–4 years"],correct:1,
+r:"Separation anxiety commonly intensifies around 6–8 months, coinciding with the infant's growing cognitive ability to distinguish caregivers from strangers, and may persist into toddlerhood."},
+{topic:"Pediatrics", q:"By what age does a healthy infant's birth weight typically double?",
+opts:["2 months","5–6 months","12 months","18 months"],correct:1,
+r:"Infants typically double their birth weight by 5–6 months and triple it by about 12 months, reflecting expected normal growth velocity."},
+{topic:"Pediatrics", q:"At what age does the posterior fontanel normally close?",
+opts:["6 weeks (2 months)","6 months","12 months","18 months"],correct:0,
+r:"The posterior fontanel closes by about 2 months of age, while the larger anterior fontanel remains open until roughly 12–18 months."},
+{topic:"Pediatrics", q:"Which type of play is most characteristic of a toddler (1–3 years)?",
+opts:["Solitary play only","Parallel play","Cooperative play","Onlooker play only"],correct:1,
+r:"Toddlers typically engage in parallel play — playing alongside other children with similar toys but without direct interaction or role coordination."},
+{topic:"Pediatrics", q:"Which Erikson stage is a school-age child (6–12 years) working through?",
+opts:["Autonomy vs. shame and doubt","Initiative vs. guilt","Industry vs. inferiority","Identity vs. role confusion"],correct:2,
+r:"School-age children develop a sense of competence and accomplishment (industry) through mastering skills and tasks; failure to succeed can foster feelings of inferiority."},
+{topic:"Pediatrics", q:"An adolescent client is primarily focused on peer acceptance and forming a sense of self. This reflects Erikson's stage of:",
+opts:["Industry vs. inferiority","Identity vs. role confusion","Intimacy vs. isolation","Generativity vs. stagnation"],correct:1,
+r:"Adolescence corresponds to Erikson's identity vs. role confusion stage, where teens explore values, roles, and relationships to consolidate a stable sense of self."},
+{topic:"Pediatrics", q:"Why are iron-rich complementary foods recommended starting around 6 months of age?",
+opts:["Breast milk contains no iron at all","Fetal iron stores from birth begin to deplete around this age","Infants can no longer digest lactose after 6 months","Iron prevents teething discomfort"],correct:1,
+r:"Infants are born with iron stores that typically last about 6 months; after this, dietary iron (from fortified cereals, meats) is needed to prevent iron-deficiency anemia."},
+{topic:"Pediatrics", q:"Current safety guidelines recommend keeping infants and toddlers in a rear-facing car seat until:",
+opts:["3 months old","6 months old","At least 2 years old, or per seat's height/weight limit","5 years old"],correct:2,
+r:"Rear-facing car seats better protect the head, neck, and spine in a crash; guidelines recommend keeping children rear-facing until at least age 2 or until they exceed the seat's manufacturer limits."},
+{topic:"Pediatrics", q:"At approximately what age does the first primary (deciduous) tooth typically erupt?",
+opts:["2 months","6 months","12 months","2 years"],correct:1,
+r:"The first primary tooth (usually a lower central incisor) typically erupts around 6 months of age, though timing varies among healthy infants."},
+
+// ---------- Fundamentals of Nursing 2 ----------
+{topic:"Fundamentals", q:"When performing hand hygiene with alcohol-based sanitizer, how long should the friction/rubbing process last?",
+opts:["5 seconds","10 seconds","20–30 seconds","60 seconds"],correct:2,
+r:"WHO and CDC guidelines recommend rubbing hands with alcohol-based sanitizer for 20–30 seconds, covering all surfaces, until hands are dry."},
+{topic:"Fundamentals", q:"A nurse is inserting an indwelling urinary catheter using sterile technique. Which action breaks sterility?",
+opts:["Holding the catheter 2 inches from the tip","Cleaning the meatus from front to back before insertion","Setting the sterile tray below waist level","Using sterile gloves to open the sterile package"],correct:2,
+r:"Sterile fields and objects must be kept at or above waist level; anything below waist level is considered contaminated because it's out of the nurse's direct line of sight."},
+{topic:"Fundamentals", q:"Which vital sign finding best indicates the client is experiencing orthostatic hypotension?",
+opts:["BP drop of 5 mmHg systolic when standing","BP drop of ≥20 mmHg systolic or ≥10 mmHg diastolic within 3 minutes of standing","Heart rate decrease of 10 bpm when standing","Temperature increase of 0.5°C after standing"],correct:1,
+r:"Orthostatic hypotension is defined as a drop of ≥20 mmHg systolic or ≥10 mmHg diastolic BP within 3 minutes of moving from lying/sitting to standing, often with dizziness."},
+{topic:"Fundamentals", q:"A client has an order for a Z-track IM injection. What is the primary purpose of this technique?",
+opts:["To reduce pain at the injection site","To prevent leakage of irritating medication into subcutaneous tissue","To speed up drug absorption","To allow use of a shorter needle"],correct:1,
+r:"The Z-track method displaces skin/tissue laterally before injection and releases it after withdrawal, sealing the medication in the muscle and preventing tracking/leakage into the subQ layer."},
+{topic:"Fundamentals", q:"Which of the following best reflects the principle of beneficence in nursing ethics?",
+opts:["Respecting a client's right to refuse treatment","Acting in ways that promote the client's well-being","Distributing care resources fairly among clients","Telling the client the truth about their diagnosis"],correct:1,
+r:"Beneficence means actively acting for the benefit/good of the client. Respecting refusal relates to autonomy, fair distribution relates to justice, and truth-telling relates to veracity."},
+{topic:"Fundamentals", q:"A client on bed rest is at risk for pressure injury. Which is the most effective preventive nursing action?",
+opts:["Massaging reddened bony prominences vigorously","Repositioning the client at least every 2 hours","Keeping the head of bed elevated at 90 degrees continuously","Applying powder to keep skin dry"],correct:1,
+r:"Regular repositioning (at least every 2 hours) relieves sustained pressure over bony prominences, which is the primary cause of pressure injury. Vigorous massage of reddened areas can worsen tissue damage."},
+
+{topic:"Fundamentals", q:"A client has active pulmonary tuberculosis. Which type of isolation precaution is required?",
+opts:["Contact precautions","Droplet precautions","Airborne precautions with a negative-pressure room","Standard precautions only"],correct:2,
+r:"TB is spread via small airborne droplet nuclei that remain suspended in air; airborne precautions require an N95 respirator and a negative-pressure isolation room to prevent transmission."},
+{topic:"Fundamentals", q:"When assisting a client to transfer from bed to chair, which body mechanics principle should the nurse apply?",
+opts:["Keep feet close together for a narrow base","Bend at the waist to lift the client","Maintain a wide base of support and bend at the knees","Twist the trunk while lifting to save time"],correct:2,
+r:"A wide base of support and bending at the knees (not the waist) lowers the center of gravity and uses leg muscles rather than the back, reducing injury risk to the nurse."},
+{topic:"Fundamentals", q:"Which is the first step of the nursing process?",
+opts:["Planning","Diagnosis","Assessment","Implementation"],correct:2,
+r:"The nursing process begins with assessment — systematic collection of subjective and objective client data — which forms the basis for identifying nursing diagnoses and planning care."},
+{topic:"Fundamentals", q:"According to Maslow's hierarchy of needs, which client need should the nurse address first?",
+opts:["A client's request for spiritual counseling","A client reporting difficulty breathing","A client's concern about body image","A client wanting more visitors"],correct:1,
+r:"Maslow's hierarchy prioritizes physiologic needs (like oxygenation) above safety, love/belonging, esteem, and self-actualization needs; difficulty breathing must be addressed first."},
+{topic:"Fundamentals", q:"A client states, 'I feel nauseated and dizzy.' In documentation, this is classified as:",
+opts:["Objective data","Subjective data","A nursing diagnosis","A validated finding"],correct:1,
+r:"Subjective data is information reported by the client based on their own perception (symptoms, feelings), as opposed to objective data, which the nurse directly observes or measures (signs)."},
+{topic:"Fundamentals", q:"A physician orders wrist restraints for a confused, combative client. Which nursing action is correct?",
+opts:["Apply restraints indefinitely until the physician cancels the order","Use the least restrictive method necessary and reassess/document per policy","Tie restraints directly to the bed's side rails","Apply restraints without a physician's order if the nurse feels it's needed"],correct:1,
+r:"Restraints should be the least restrictive intervention necessary, require a time-limited order, and demand frequent reassessment/documentation of circulation, skin integrity, and continued need."},
+{topic:"Fundamentals", q:"Which of the following represents the '6 rights' of medication administration?",
+opts:["Right drug, dose, route, time, patient, documentation","Right drug, cost, brand, supplier, time, patient","Right diagnosis, drug, dose, allergy, time, room","Right patient, drug, insurance, time, dose, physician"],correct:0,
+r:"The 6 rights are: right patient, right drug, right dose, right route, right time, and right documentation — core safety checks before administering any medication."},
+{topic:"Fundamentals", q:"A surgical wound is healing normally. Which phase of wound healing is characterized by collagen deposition and new tissue (granulation) formation?",
+opts:["Hemostasis phase","Inflammatory phase","Proliferative phase","Maturation phase"],correct:2,
+r:"The proliferative phase (roughly days 3–21) involves fibroblast activity, collagen synthesis, and granulation tissue formation to rebuild the wound bed, following the initial hemostasis and inflammatory phases."},
+{topic:"Fundamentals", q:"When administering oxygen via nasal cannula, the flow rate should generally not exceed:",
+opts:["2 L/min","6 L/min","10 L/min","15 L/min"],correct:1,
+r:"Nasal cannula flow rates above 6 L/min do not significantly increase delivered FiO2 further and can cause nasal mucosa drying/irritation; higher oxygen needs require a different delivery device."},
+{topic:"Fundamentals", q:"What is the primary purpose of performing passive range-of-motion (ROM) exercises for an immobile client?",
+opts:["To build muscle strength","To prevent joint contractures and maintain joint mobility","To increase the client's heart rate for cardiovascular fitness","To reduce the need for pain medication"],correct:1,
+r:"Passive ROM exercises move joints through their range without client effort, helping prevent contractures, maintain flexibility, and reduce complications of immobility, though they do not build muscle strength."},
+
+// ---------- Normal Psychiatric Nursing ----------
+{topic:"Psychiatric", q:"Which nursing response demonstrates therapeutic communication with a client expressing sadness?",
+opts:["'You shouldn't feel that way, things will get better.'","'I understand exactly how you feel.'","'Tell me more about what's making you feel this way.'","'Let's talk about something more positive instead.'"],correct:2,
+r:"Open-ended questions that invite the client to elaborate ('tell me more') demonstrate therapeutic communication by encouraging expression, whereas the others give false reassurance, false empathy, or change the subject."},
+{topic:"Psychiatric", q:"A client with generalized anxiety disorder is describing excessive worry. Which nursing intervention is most appropriate during a moderate anxiety level?",
+opts:["Leave the client alone to calm down independently","Use short, simple, clear statements and remain with the client","Engage the client in complex problem-solving discussions","Immediately administer PRN sedatives without further assessment"],correct:1,
+r:"At moderate anxiety, perceptual field narrows somewhat; the nurse should use clear, simple language and stay present to help the client refocus, rather than leaving them alone or overwhelming them with complexity."},
+{topic:"Psychiatric", q:"Which is a priority nursing assessment for a client newly started on lithium therapy?",
+opts:["Fasting blood glucose","Serum lithium level and signs of toxicity (e.g., tremor, GI upset)","Peak flow measurement","Serum calcium level"],correct:1,
+r:"Lithium has a narrow therapeutic index (0.6–1.2 mEq/L); regular monitoring of serum levels and early signs of toxicity (tremor, nausea, ataxia) is essential to prevent serious harm."},
+{topic:"Psychiatric", q:"A client with major depressive disorder suddenly appears calmer, gives away personal belongings, and states 'everything will be fine now.' This should alert the nurse to:",
+opts:["Improved mood indicating recovery","Possible increased suicide risk","Onset of mania","Medication non-adherence"],correct:1,
+r:"A sudden lift in mood after a period of severe depression, combined with giving away possessions, can indicate the client has resolved on a plan for suicide — this requires immediate safety assessment, not reassurance that they're 'better'."},
+{topic:"Psychiatric", q:"Which is the primary goal of milieu therapy in an inpatient psychiatric setting?",
+opts:["To isolate clients to reduce stimulation","To use the therapeutic environment itself to promote healthy behaviors and interaction","To enforce strict punishment for maladaptive behavior","To replace individual therapy sessions entirely"],correct:1,
+r:"Milieu therapy uses the structured, safe environment — including scheduled activities, peer interaction, and consistent rules — as a therapeutic tool to support behavior change and social skill-building."},
+{topic:"Psychiatric", q:"A client diagnosed with schizophrenia states, 'The television is sending me secret messages.' The nurse recognizes this as:",
+opts:["An illusion","A delusion of reference","Echolalia","A hallucination"],correct:1,
+r:"Believing that neutral external events (like TV broadcasts) carry personal, secret meaning is a delusion of reference — a fixed false belief, distinct from hallucinations (false sensory perception) or illusions (misinterpreted real stimuli)."},
+
+{topic:"Psychiatric", q:"A client with alcohol use disorder insists, 'I don't have a drinking problem, I can stop anytime.' This is an example of which defense mechanism?",
+opts:["Projection","Denial","Displacement","Sublimation"],correct:1,
+r:"Denial is the refusal to acknowledge a painful reality (such as substance dependence) despite clear evidence, often serving to protect the person from anxiety."},
+{topic:"Psychiatric", q:"Which sequence correctly reflects the phases of the nurse-client therapeutic relationship?",
+opts:["Working → orientation → termination","Orientation → working → termination","Termination → orientation → working","Orientation → termination → working"],correct:1,
+r:"The therapeutic relationship progresses through orientation (establishing trust and setting goals), working (addressing problems and promoting change), and termination (ending the relationship and evaluating progress)."},
+{topic:"Psychiatric", q:"A client on haloperidol develops sudden, sustained muscle spasms of the neck and face. This extrapyramidal symptom is known as:",
+opts:["Tardive dyskinesia","Akathisia","Acute dystonia","Pseudoparkinsonism"],correct:2,
+r:"Acute dystonia presents as sudden, painful, sustained muscle contractions (often neck/face) and is a common early extrapyramidal side effect of typical antipsychotics like haloperidol, treated with anticholinergics."},
+{topic:"Psychiatric", q:"A client who chronically abuses alcohol abruptly stops drinking. Delirium tremens (DTs), if they occur, typically peak within:",
+opts:["2–4 hours after last drink","6–12 hours after last drink","48–96 hours after last drink","2 weeks after last drink"],correct:2,
+r:"Delirium tremens is a severe alcohol withdrawal complication that typically emerges 48–96 hours after the last drink and can include severe agitation, hallucinations, and autonomic instability requiring close monitoring."},
+{topic:"Psychiatric", q:"A client with a pattern of unstable relationships, impulsivity, and intense fear of abandonment most likely has which personality disorder?",
+opts:["Antisocial personality disorder","Borderline personality disorder","Schizoid personality disorder","Obsessive-compulsive personality disorder"],correct:1,
+r:"Borderline personality disorder (Cluster B) is characterized by unstable relationships, impulsivity, identity disturbance, and intense fear of abandonment, often accompanied by self-harm behaviors."},
+{topic:"Psychiatric", q:"According to Kübler-Ross, which stage of grief typically comes immediately after denial?",
+opts:["Bargaining","Anger","Depression","Acceptance"],correct:1,
+r:"Kübler-Ross's stages generally progress: denial → anger → bargaining → depression → acceptance, though clients may not move through them in strict order or may revisit stages."},
+{topic:"Psychiatric", q:"Under what circumstance is the use of seclusion or restraint in psychiatric care justified?",
+opts:["To punish disruptive behavior","When the client poses an imminent danger to self or others and less restrictive measures have failed","Whenever a client refuses medication","At the nurse's convenience during short-staffed shifts"],correct:1,
+r:"Seclusion/restraint is an emergency safety measure used only when a client presents imminent danger to self or others and less restrictive interventions have been attempted or are not feasible, per legal and ethical standards."},
+{topic:"Psychiatric", q:"The nurse says to a client, 'You mentioned you felt abandoned when your father left — tell me more about that.' This is an example of which therapeutic communication technique?",
+opts:["Giving advice","Reflecting","Minimizing feelings","Changing the subject"],correct:1,
+r:"Reflecting involves repeating or paraphrasing part of what the client said to encourage them to explore feelings further, showing the nurse is listening and inviting deeper expression."},
+{topic:"Psychiatric", q:"When assessing suicide risk, which nursing approach is most appropriate?",
+opts:["Avoid mentioning suicide directly to prevent 'planting the idea'","Ask directly, 'Are you thinking of harming or killing yourself?'","Only assess risk if the client brings it up first","Assume risk is low if the client appears calm"],correct:1,
+r:"Direct, non-judgmental questioning about suicidal ideation does not increase risk and is essential for accurate assessment; avoiding the topic can miss a client in danger, and calm affect does not rule out risk."},
+{topic:"Psychiatric", q:"In group therapy, a member who frequently summarizes what others have said and helps keep the group focused is fulfilling which role?",
+opts:["Blocker role","Task role (e.g., coordinator/clarifier)","Aggressor role","Self-confessor role"],correct:1,
+r:"Task roles in group dynamics (such as coordinating, clarifying, or summarizing) help the group achieve its goals, in contrast to disruptive roles like blocking or aggression, or self-focused roles like the self-confessor."},
+
+// ---------- Abnormal Pediatric Nursing ----------
+{topic:"Abnormal Pediatrics", q:"A child with suspected epiglottitis is brought to the ED. Which nursing action is contraindicated?",
+opts:["Keeping the child calm and upright","Preparing for possible emergency intubation","Inspecting the throat with a tongue depressor","Administering humidified oxygen as tolerated"],correct:2,
+r:"Examining the throat or attempting to visualize the epiglottis directly can trigger complete airway obstruction in epiglottitis. The child should be kept calm, upright, and airway equipment should be ready."},
+{topic:"Abnormal Pediatrics", q:"An infant with suspected pyloric stenosis is expected to present with which classic symptom?",
+opts:["Bile-stained (greenish) vomiting","Projectile, non-bilious vomiting after feeding","Bloody, currant-jelly stools","Abdominal distention with absent bowel sounds"],correct:1,
+r:"Pyloric stenosis classically causes forceful, projectile vomiting of non-bilious (undigested milk) contents shortly after feeding, due to hypertrophy of the pyloric muscle obstructing gastric outflow."},
+{topic:"Abnormal Pediatrics", q:"A child with congenital heart disease presenting with cyanosis, clubbing, and a history of 'tet spells' most likely has:",
+opts:["Atrial septal defect","Patent ductus arteriosus","Tetralogy of Fallot","Coarctation of the aorta"],correct:2,
+r:"Tetralogy of Fallot (VSD, pulmonic stenosis, overriding aorta, RV hypertrophy) is a cyanotic defect classically associated with hypercyanotic 'tet spells' and clubbing from chronic hypoxemia."},
+{topic:"Abnormal Pediatrics", q:"Which is the priority nursing intervention for a child in status asthmaticus not responding to initial bronchodilator therapy?",
+opts:["Encourage oral fluids immediately","Prepare for possible escalation of respiratory support and notify the physician","Place the child in a supine position","Delay further intervention and reassess in 1 hour"],correct:1,
+r:"Status asthmaticus unresponsive to bronchodilators is a medical emergency; the nurse must promptly notify the physician and prepare for escalating interventions (e.g., IV steroids, possible intubation) as respiratory failure can develop quickly."},
+{topic:"Abnormal Pediatrics", q:"A child with nephrotic syndrome is expected to exhibit which classic triad of findings?",
+opts:["Hypertension, hematuria, oliguria","Massive proteinuria, hypoalbuminemia, generalized edema","Polyuria, glycosuria, weight loss","Fever, flank pain, dysuria"],correct:1,
+r:"Nephrotic syndrome's hallmark triad is massive proteinuria (leading to hypoalbuminemia) and resulting generalized edema, caused by increased glomerular permeability to protein."},
+{topic:"Abnormal Pediatrics", q:"A child is diagnosed with Kawasaki disease. Which finding is most concerning and requires cardiac monitoring?",
+opts:["Strawberry tongue","Desquamation of fingers and toes","Risk of coronary artery aneurysm","Bilateral non-purulent conjunctivitis"],correct:2,
+r:"While the rash, strawberry tongue, and desquamation are classic diagnostic signs, the most serious complication of Kawasaki disease is coronary artery aneurysm formation, requiring echocardiographic monitoring and timely IVIG treatment."}
+];
+
+BANK.push(
+{topic:"Abnormal Pediatrics", q:"A nurse assesses a newborn for developmental dysplasia of the hip. Which finding, elicited via the Ortolani maneuver, suggests hip instability?",
+opts:["A soft clicking sound only","A palpable 'clunk' as the femoral head reduces into the acetabulum","Symmetric hip abduction bilaterally","Absence of thigh skin folds"],correct:1,
+r:"A palpable 'clunk' during the Ortolani maneuver indicates the dislocated femoral head is being reduced back into the acetabulum, suggesting developmental dysplasia of the hip."},
+{topic:"Abnormal Pediatrics", q:"Which feeding position is most appropriate for an infant with a cleft palate?",
+opts:["Flat, lying supine","Upright or semi-upright, at a 45–90 degree angle","Prone position during feeding","Side-lying with head lower than body"],correct:1,
+r:"An upright or semi-upright feeding position uses gravity to help direct milk flow toward the esophagus and reduces the risk of nasal regurgitation and aspiration in infants with cleft palate."},
+{topic:"Abnormal Pediatrics", q:"Which physical characteristic is commonly associated with Down syndrome (Trisomy 21)?",
+opts:["Simian (single transverse palmar) crease","Webbed neck with low-set ears only","Cleft lip without other features","Absent Moro reflex"],correct:0,
+r:"A single transverse palmar crease (simian crease), along with upward slanting eyes, epicanthal folds, and hypotonia, is a common physical feature associated with Down syndrome."},
+{topic:"Abnormal Pediatrics", q:"A child with cerebral palsy is noted to have increased muscle tone and stiffness, with exaggerated reflexes. This describes which type of cerebral palsy?",
+opts:["Spastic cerebral palsy","Athetoid (dyskinetic) cerebral palsy","Ataxic cerebral palsy","Hypotonic cerebral palsy"],correct:0,
+r:"Spastic cerebral palsy, the most common type, is characterized by increased muscle tone (hypertonia), stiffness, and hyperactive reflexes due to damage to the motor cortex."},
+{topic:"Abnormal Pediatrics", q:"A child with sickle cell disease presents with severe pain in the extremities during a vaso-occlusive crisis. Which nursing intervention is a priority?",
+opts:["Apply cold compresses to affected joints","Administer IV fluids and prescribed analgesics, and encourage rest","Restrict oral fluid intake to prevent overload","Encourage vigorous ambulation to improve circulation"],correct:1,
+r:"During vaso-occlusive crisis, hydration (IV fluids) helps reduce blood viscosity and sickling, while adequate analgesia manages severe pain; cold compresses can worsen vasoconstriction and should be avoided (warm compresses are preferred)."},
+{topic:"Abnormal Pediatrics", q:"A toddler with suspected bacterial meningitis is assessed for nuchal rigidity. Which additional sign supports this diagnosis?",
+opts:["Negative Brudzinski's sign","Positive Kernig's sign (pain/resistance on knee extension with hip flexed)","Decreased deep tendon reflexes","Bradycardia with hypertension only"],correct:1,
+r:"A positive Kernig's sign — pain and resistance when extending the knee while the hip is flexed — along with nuchal rigidity and a positive Brudzinski's sign, are classic indicators of meningeal irritation in meningitis."},
+{topic:"Abnormal Pediatrics", q:"An infant presents with sudden episodes of abdominal pain, drawing knees to chest, and passage of 'currant jelly' stools. This is most consistent with:",
+opts:["Pyloric stenosis","Intussusception","Hirschsprung disease","Gastroesophageal reflux"],correct:1,
+r:"Intussusception, telescoping of one segment of bowel into another, classically presents with episodic colicky abdominal pain, knees drawn to chest, and red 'currant jelly' stools from bowel wall ischemia and mucus."},
+{topic:"Abnormal Pediatrics", q:"A newborn fails to pass meconium within 48 hours of birth and has abdominal distention. This is most suggestive of:",
+opts:["Pyloric stenosis","Hirschsprung disease (congenital aganglionic megacolon)","Intussusception","Necrotizing enterocolitis"],correct:1,
+r:"Hirschsprung disease results from an absence of ganglion cells in part of the colon, preventing peristalsis in that segment; failure to pass meconium within 24–48 hours is a classic early sign."},
+{topic:"Abnormal Pediatrics", q:"A toddler presents with a harsh, barking cough, inspiratory stridor, and hoarseness, worse at night. This presentation is most consistent with:",
+opts:["Epiglottitis","Croup (laryngotracheobronchitis)","Bronchiolitis","Pertussis"],correct:1,
+r:"Croup classically causes a barking, seal-like cough with inspiratory stridor and hoarseness, often worse at night, and is commonly viral in origin (parainfluenza), distinguishing it from the more sudden, toxic presentation of epiglottitis."},
+{topic:"Abnormal Pediatrics", q:"An infant is diagnosed with RSV bronchiolitis. Which nursing intervention is most appropriate?",
+opts:["Administer routine antibiotics for all cases","Provide supportive care: suctioning, humidified oxygen, and adequate hydration","Encourage large-volume oral feeds regardless of respiratory distress","Withhold oxygen unless the infant is unconscious"],correct:1,
+r:"RSV bronchiolitis is viral, so treatment is primarily supportive — nasal suctioning, humidified oxygen as needed, and maintaining hydration — rather than antibiotics, which do not treat viral infections."}
+);
+
+const topics = [...new Set(BANK.map(q=>q.topic))];
+const topicListEl = document.getElementById('topicList');
+topics.forEach(t=>{
+  const count = BANK.filter(q=>q.topic===t).length;
+  const div = document.createElement('div');
+  div.className='topic';
+  div.innerHTML = `<label><input type="checkbox" class="topicChk" value="${t}" checked style="margin-right:10px;transform:scale(1.2);">${t} <span style="color:var(--sub);font-size:.82rem;">(${count})</span></label>`;
+  topicListEl.appendChild(div);
+});
+
+function selectedTopics(){
+  return [...document.querySelectorAll('.topicChk:checked')].map(c=>c.value);
+}
+function updateMax(){
+  const sel = selectedTopics();
+  const avail = BANK.filter(q=>sel.includes(q.topic)).length;
+  document.getElementById('maxAvail').textContent = 'of ' + avail + ' available';
+  document.getElementById('itemCount').max = avail || 1;
+}
+document.addEventListener('change', e=>{ if(e.target.classList.contains('topicChk')) updateMax(); });
+updateMax();
+
+let quizQs = [], current = 0, score = 0;
+
+document.getElementById('startBtn').onclick = ()=>{
+  const sel = selectedTopics();
+  if(sel.length===0){ alert('Pick at least one topic.'); return; }
+  const pool = BANK.filter(q=>sel.includes(q.topic));
+  let n = parseInt(document.getElementById('itemCount').value) || 10;
+  n = Math.min(n, pool.length);
+  quizQs = [...pool].sort(()=>Math.random()-0.5).slice(0,n);
+  current = 0; score = 0;
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+  showQuestion();
+};
+
+function showQuestion(){
+  const q = quizQs[current];
+  document.getElementById('progress').textContent = `Question ${current+1} of ${quizQs.length}`;
+  document.getElementById('qTopic').textContent = q.topic;
+  document.getElementById('qText').textContent = q.q;
+  const optDiv = document.getElementById('options');
+  optDiv.innerHTML='';
+  const rat = document.getElementById('rationale');
+  rat.style.display='none';
+  document.getElementById('nextBtn').classList.add('hidden');
+  q.opts.forEach((opt,i)=>{
+    const btn = document.createElement('button');
+    btn.className='opt';
+    btn.textContent = opt;
+    btn.onclick = ()=> selectAnswer(i);
+    optDiv.appendChild(btn);
+  });
+}
+
+function selectAnswer(i){
+  const q = quizQs[current];
+  const btns = document.querySelectorAll('.opt');
+  btns.forEach(b=>b.disabled=true);
+  btns[q.correct].classList.add('correct');
+  if(i!==q.correct){ btns[i].classList.add('wrong'); } else { score++; }
+  const rat = document.getElementById('rationale');
+  rat.textContent = 'Rationale: ' + q.r;
+  rat.style.display='block';
+  document.getElementById('nextBtn').classList.remove('hidden');
+}
+
+document.getElementById('nextBtn').onclick = ()=>{
+  current++;
+  if(current < quizQs.length){ showQuestion(); }
+  else { showResults(); }
+};
+
+function showResults(){
+  document.getElementById('quiz').classList.add('hidden');
+  document.getElementById('results').classList.remove('hidden');
+  const pct = Math.round((score/quizQs.length)*100);
+  document.getElementById('scoreText').textContent = `${score} / ${quizQs.length}`;
+  document.getElementById('scoreDetail').textContent = `${pct}% correct`;
+}
+
+document.getElementById('restartBtn').onclick = ()=>{
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('setup').classList.remove('hidden');
+  updateMax();
+};
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(console.error);
+  });
+}
+</script>
+
+</body>
+</html>
